@@ -89,7 +89,7 @@ function ServicesPage() {
       </div>
       <ResourceDialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}
         title={editing ? t("common.edit") : t("common.new")}
-        fields={fields} initial={editing ?? {}} onSubmit={(v) => save.mutate(v as Partial<Service>)} submitting={save.isPending} />
+        fields={fields} initial={(editing ?? {}) as Record<string, unknown>} onSubmit={(v) => save.mutate(v as Partial<Service>)} submitting={save.isPending} />
     </div>
   );
 }

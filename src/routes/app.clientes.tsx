@@ -120,7 +120,7 @@ function CustomersPage() {
         onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}
         title={editing ? t("common.edit") : t("common.new")}
         fields={fields}
-        initial={editing ?? {}}
+        initial={(editing ?? {}) as Record<string, unknown>}
         onSubmit={(v) => save.mutate(v as Partial<Customer>)}
         submitting={save.isPending}
       />
