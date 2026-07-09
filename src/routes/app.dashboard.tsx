@@ -103,8 +103,8 @@ function Dashboard() {
           <div className="text-sm text-muted-foreground">Ações rápidas</div>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link to="/app/ordens/nova"><Button size="sm"><Plus className="mr-1 h-4 w-4" />Nova OS</Button></Link>
-            <Link to="/app/clientes/novo"><Button size="sm" variant="outline"><Plus className="mr-1 h-4 w-4" />Cliente</Button></Link>
-            <Link to="/app/veiculos/novo"><Button size="sm" variant="outline"><Plus className="mr-1 h-4 w-4" />Veículo</Button></Link>
+            <Link to="/app/clientes"><Button size="sm" variant="outline"><Plus className="mr-1 h-4 w-4" />Cliente</Button></Link>
+            <Link to="/app/veiculos"><Button size="sm" variant="outline"><Plus className="mr-1 h-4 w-4" />Veículo</Button></Link>
           </div>
         </div>
       </div>
