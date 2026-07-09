@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PendenteRouteImport } from './routes/pendente'
 import { Route as BloqueadoRouteImport } from './routes/bloqueado'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 
 const PendenteRoute = PendenteRouteImport.update({
@@ -29,6 +30,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/bloqueado' | '/pendente'
+  fullPaths: '/' | '/app' | '/auth' | '/bloqueado' | '/pendente'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/bloqueado' | '/pendente'
-  id: '__root__' | '/' | '/auth' | '/bloqueado' | '/pendente'
+  to: '/' | '/app' | '/auth' | '/bloqueado' | '/pendente'
+  id: '__root__' | '/' | '/app' | '/auth' | '/bloqueado' | '/pendente'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRoute
   BloqueadoRoute: typeof BloqueadoRoute
   PendenteRoute: typeof PendenteRoute
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRoute,
   AuthRoute: AuthRoute,
   BloqueadoRoute: BloqueadoRoute,
   PendenteRoute: PendenteRoute,
