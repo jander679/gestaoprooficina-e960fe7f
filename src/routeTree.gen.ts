@@ -14,8 +14,11 @@ import { Route as BloqueadoRouteImport } from './routes/bloqueado'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppVeiculosRouteImport } from './routes/app.veiculos'
+import { Route as AppServicosRouteImport } from './routes/app.servicos'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
+import { Route as AppClientesRouteImport } from './routes/app.clientes'
 
 const PendenteRoute = PendenteRouteImport.update({
   id: '/pendente',
@@ -42,6 +45,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppVeiculosRoute = AppVeiculosRouteImport.update({
+  id: '/veiculos',
+  path: '/veiculos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppServicosRoute = AppServicosRouteImport.update({
+  id: '/servicos',
+  path: '/servicos',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -52,6 +65,11 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppClientesRoute = AppClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,8 +77,11 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
+  '/app/clientes': typeof AppClientesRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/servicos': typeof AppServicosRoute
+  '/app/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +89,11 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
+  '/app/clientes': typeof AppClientesRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/servicos': typeof AppServicosRoute
+  '/app/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +102,11 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
+  '/app/clientes': typeof AppClientesRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/servicos': typeof AppServicosRoute
+  '/app/veiculos': typeof AppVeiculosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,8 +116,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bloqueado'
     | '/pendente'
+    | '/app/clientes'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/servicos'
+    | '/app/veiculos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -98,8 +128,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bloqueado'
     | '/pendente'
+    | '/app/clientes'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/servicos'
+    | '/app/veiculos'
   id:
     | '__root__'
     | '/'
@@ -107,8 +140,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bloqueado'
     | '/pendente'
+    | '/app/clientes'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/servicos'
+    | '/app/veiculos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -156,6 +192,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/veiculos': {
+      id: '/app/veiculos'
+      path: '/veiculos'
+      fullPath: '/app/veiculos'
+      preLoaderRoute: typeof AppVeiculosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/servicos': {
+      id: '/app/servicos'
+      path: '/servicos'
+      fullPath: '/app/servicos'
+      preLoaderRoute: typeof AppServicosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/dashboard': {
       id: '/app/dashboard'
       path: '/dashboard'
@@ -170,17 +220,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/clientes': {
+      id: '/app/clientes'
+      path: '/clientes'
+      fullPath: '/app/clientes'
+      preLoaderRoute: typeof AppClientesRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppClientesRoute: typeof AppClientesRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppServicosRoute: typeof AppServicosRoute
+  AppVeiculosRoute: typeof AppVeiculosRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppClientesRoute: AppClientesRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppServicosRoute: AppServicosRoute,
+  AppVeiculosRoute: AppVeiculosRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
