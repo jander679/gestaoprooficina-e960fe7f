@@ -70,7 +70,7 @@ function OrderDetail() {
 
   const changeStatus = useMutation({
     mutationFn: async (status: string) => {
-      const { error } = await supabase.from("service_orders").update({ status }).eq("id", id);
+      const { error } = await supabase.from("service_orders").update({ status: status as never }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success(t("common.updated")); qc.invalidateQueries({ queryKey: ["os", id] }); qc.invalidateQueries({ queryKey: ["orders"] }); },
