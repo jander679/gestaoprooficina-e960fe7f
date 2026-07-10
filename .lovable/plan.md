@@ -1,67 +1,49 @@
-## Objetivo
+# Correção: cadastro de empresa + idioma pt-BR nativo
 
-Provisionar o e-mail **thedinjoaopedro@gmail.com** como **Administrador Geral (super_admin)** do sistema, com poderes completos sobre contas de clientes (oficinas), e construir a tela de administração onde ele exerce esses poderes.
+## Causa raiz do erro
 
-## 1. Criação do usuário Super Admin
+Ao aprovar uma nova conta e o usuário tentar cadastrar sua empresa, o fluxo em `src/routes/app.configuracoes.tsx` faz três inserts em sequência: `companies` → `units` → `memberships`. As policies atuais bloqueiam o terceiro passo:
 
-O trigger `handle_new_user` só promove a `super_admin` o **primeiro** usuário que se cadastrar. Como o banco pode já ter outros usuários, farei a promoção de forma explícita e idempotente via migration:
+- `memberships` INSERT exige `is_super_admin(uid)` OU `is_unit_admin(uid, unit_id)`.
+- Como o usuário ainda **não é** admin da unidade recém-criada (a membership é justamente o que estava tentando criar), o RLS rejeita — clássico problema ovo-e-galinha.
+- O mesmo acontece ao criar uma **nova unidade** dentro de uma empresa existente: o insert em `memberships` para dar acesso ao criador é bloqueado.
 
-1. Criar o usuário em `auth.users` com a senha `Jander00*` (via `auth.admin` na migration, e-mail já confirmado) — se já existir, apenas reaproveita o `id`.
-2. Garantir `profiles` para esse usuário.
-3. Inserir em `public.user_roles` o papel `super_admin` (ON CONFLICT DO NOTHING).
-4. Inserir/atualizar `public.account_access` para `status = 'approved'`, `valid_until = NULL`.
-5. Registrar em `audit_log` a promoção (actor = próprio usuário do seed).
+Também há uma segunda falha latente: a política de INSERT de `units` só permite quem já é `oficina_admin` da company OU o `criada_por` da company — funciona no primeiro caso, mas travará convidados no futuro.
 
-Assim, no primeiro login com `thedinjoaopedro@gmail.com` / `Jander00*`, ele entra direto como Super Admin, sem passar pela fila de aprovação.
+## Correções
 
-## 2. Página do Administrador Geral — `/app/admin/contas`
+### 1. Banco de dados (migração)
 
-Rota protegida que exige `is_super_admin(auth.uid()) = true` (checado via hook `useActiveUnit().isSuperAdmin`; usuários comuns são redirecionados).
+Criar um trigger `AFTER INSERT` em `public.units` (SECURITY DEFINER) que garante uma `memberships` com role `oficina_admin` para o criador quando:
 
-**Listagem de contas** (todas as `account_access` + join com `profiles` + empresa/unidades vinculadas):
+- o usuário é o `criada_por` da company (primeira unidade), ou
+- o usuário já é `oficina_admin` de qualquer outra unidade da mesma company (nova unidade em company existente).
 
-- Busca por nome/e-mail.
-- Filtros por status: `pending`, `approved`, `paused`, `expired`, `rejected`.
-- Colunas: usuário, empresa/CNPJ, status atual, `valid_until`, última alteração.
+Isso remove a necessidade de o cliente inserir a membership manualmente, fecha o buraco de RLS e mantém segurança (o trigger só concede acesso a quem já é dono/admin da company).
 
-**Ações por conta (card/linha):**
+### 2. Frontend `src/routes/app.configuracoes.tsx`
 
-| Ação | Efeito |
-|---|---|
-| **Aprovar** | status → `approved` |
-| **Rejeitar** | status → `rejected` + motivo opcional |
-| **Play/Pause** (toggle) | alterna entre `approved` ↔ `paused`, grava `paused_em` e `motivo` |
-| **Definir "Liberado até DD/MM/AAAA"** | `valid_until = <data>`; gate marca como expirado automaticamente após a data |
-| **Remover validade** | `valid_until = NULL` (acesso indefinido) |
-| **Editar dados do cliente** | abre diálogo para editar `profiles.full_name`, `profiles.email` e, se necessário, `profiles.phone` |
-| **Redefinir senha** | dispara `supabase.auth.admin.updateUserById` com nova senha via server function `resetUserPassword` (exige `super_admin` no middleware) |
-| **Revogar acesso** | status → `rejected` + desativa todas as `memberships` do usuário |
+- Remover os `insert` manuais em `memberships` (agora feitos pelo trigger).
+- Após criar, chamar `refetch()` do `useActiveUnit` para carregar a nova membership.
+- Traduzir todas strings hardcoded restantes ("Empresa criada!", "Unidade criada!", "Cadastre uma empresa primeiro.", "Nome da primeira unidade", "Matriz", "Você não tem vínculo nesta unidade") usando `t(...)` com novas chaves em `settings.*`.
+- Traduzir mensagens de erro do toast: mapear `error.message` do Supabase (em inglês) para um texto pt-BR amigável (ex.: unique violation em CNPJ → "Já existe uma empresa cadastrada com este CNPJ.").
 
-Cada ação grava em `audit_log` (actor = super_admin, ação, entidade, payload com antes/depois).
+### 3. i18n global pt-BR nativo
 
-## 3. Server functions necessárias (TanStack `createServerFn` + `requireSupabaseAuth`)
+Em `src/lib/i18n.ts`:
 
-Todas verificam `has_role(userId, 'super_admin')` antes de executar; caso contrário, `403`. Carregam `supabaseAdmin` dentro do handler (`await import('@/integrations/supabase/client.server')`) — nunca no topo.
+- Trocar `fallbackLng` para `"pt-BR"` (já está) e **remover a detecção automática por navegador** para novos usuários: `detection: { order: ["localStorage"], caches: ["localStorage"] }` e definir `lng: "pt-BR"` como padrão inicial quando não houver preferência salva. Assim o sistema abre em pt-BR mesmo em navegadores em inglês.
+- Adicionar chaves faltantes usadas em `configuracoes`, mensagens de erro comuns (`errors.generic`, `errors.cnpjDuplicado`, `errors.semPermissao`, `errors.semSessao`), `pendente`, `bloqueado`, `admin.contas`, e mensagens padrão de toast.
 
-- `listAccounts()` → lista contas + profiles + empresas.
-- `setAccountStatus({ userId, status, motivo? })` → aprovar / rejeitar / pausar / retomar.
-- `setAccountValidity({ userId, validUntil | null })` → define ou remove data-limite.
-- `updateUserProfile({ userId, fullName?, email?, phone? })` → atualiza `profiles` e (se e-mail mudar) `auth.admin.updateUserById`.
-- `resetUserPassword({ userId, newPassword })` → `auth.admin.updateUserById({ password })`. Validação Zod (mínimo 8 caracteres).
-- `revokeUserAccess({ userId })` → status `rejected` + `memberships.ativo = false`.
+### 4. Utilitário de erros
 
-## 4. Gate de acesso (já existe, apenas confirmar)
+Criar `src/lib/errors.ts` com função `traduzirErro(err)` que reconhece códigos comuns do PostgREST (`23505`, `42501`, `PGRST116`, mensagens "permission denied", "row-level security", "duplicate key") e devolve texto pt-BR. Aplicar em todos os `onError` dos módulos já existentes (`clientes`, `veiculos`, `servicos`, `configuracoes`, `admin.contas`).
 
-O layout `/app` já usa `access_active()` + `account_access` para mandar para `/pendente` ou `/bloqueado`. Ao pausar ou definir `valid_until` no passado, o próximo carregamento do cliente cai no `/bloqueado` automaticamente — nada a mudar aí.
+### 5. Verificação
 
-## 5. Navegação
+Após aplicar: fazer login com uma conta recém-aprovada, cadastrar empresa + primeira unidade, criar segunda unidade, e confirmar que a sidebar carrega o seletor de unidade sem erro. Verificar via console/network que nenhuma requisição retorna 403/42501.
 
-Adicionar item **"Admin Geral"** no sidebar (`src/components/app-shell.tsx`), visível apenas quando `isSuperAdmin === true`, apontando para `/app/admin/contas`.
+## Fora de escopo
 
-## 6. Fora do escopo desta etapa
-
-Módulos ainda pendentes do plano geral (Peças, Ordens de Serviço, Colaboradores, Financeiro) seguem para as próximas etapas — este plano cobre apenas: (a) promover o e-mail informado a Super Admin, (b) entregar a página de administração com todos os controles descritos.
-
-## Confirmação sobre a senha
-
-Você colou a senha `Jander00*` no chat. Vou usá-la exatamente para criar/atualizar o usuário via migration (server-side, com service role). Recomendo trocá-la após o primeiro login em uma futura tela de "Meu perfil" — quer que eu já inclua essa tela nesta etapa também?
+- Não altero módulos ainda não implementados (Peças, OS, Financeiro) — apenas garanto que os textos base já estejam em pt-BR quando forem criados.
+- Não mexo em `client.ts`, `types.ts` ou `.env` (auto-gerados).
