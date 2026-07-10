@@ -41,7 +41,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/app/financeiro/contas-pagar", icon: Receipt, label: "Contas a Pagar", action: "nav.finance" as const },
     { to: "/app/configuracoes", icon: Settings, label: t("nav.settings"), action: "nav.settings" as const },
   ];
-  const items = isSuperAdmin ? [] : allItems.filter((i) => can(role, i.action, false));
+  const onboarding = !isSuperAdmin && memberships.length === 0;
+  const items = isSuperAdmin
+    ? []
+    : onboarding
+      ? allItems.filter((i) => i.to === "/app/configuracoes")
+      : allItems.filter((i) => can(role, i.action, false));
 
   const superItems = isSuperAdmin ? [
     { to: "/app/admin/contas", icon: ShieldCheck, label: "Contas de usuários" },
