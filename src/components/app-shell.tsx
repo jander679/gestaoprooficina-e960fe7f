@@ -39,8 +39,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const superItems = [
     { to: "/app/admin/contas", icon: ShieldCheck, label: t("nav.accounts") },
-    { to: "/app/admin/empresas", icon: Building2, label: t("nav.companies") },
-    { to: "/app/admin/auditoria", icon: ClipboardList, label: t("nav.audit") },
   ];
 
   async function signOut() {
