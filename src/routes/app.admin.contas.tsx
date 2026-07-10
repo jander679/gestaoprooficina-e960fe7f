@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errors";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -71,17 +72,17 @@ function AdminAccountsPage() {
     mutationFn: (v: { userId: string; status: "approved" | "rejected" | "paused"; reason?: string }) =>
       setStatus({ data: v }),
     onSuccess: () => { toast.success("Status atualizado"); invalidate(); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(traduzirErro(e)),
   });
   const mValidity = useMutation({
     mutationFn: (v: { userId: string; validUntil: string | null }) => setValidity({ data: v }),
     onSuccess: () => { toast.success("Validade atualizada"); invalidate(); setDateFor(null); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(traduzirErro(e)),
   });
   const mRevoke = useMutation({
     mutationFn: (userId: string) => revoke({ data: { userId } }),
     onSuccess: () => { toast.success("Acesso revogado"); invalidate(); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(traduzirErro(e)),
   });
 
   const filtered = data.filter((a) => {
@@ -217,7 +218,7 @@ function EditProfileDialog({ account, onClose, onSaved }: { account: Account; on
   const m = useMutation({
     mutationFn: () => update({ data: { userId: account.user_id, fullName: full, email, phone } }),
     onSuccess: () => { toast.success("Dados atualizados"); onSaved(); onClose(); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(traduzirErro(e)),
   });
   return (
     <Dialog open onOpenChange={onClose}>
@@ -240,7 +241,7 @@ function ResetPasswordDialog({ account, onClose }: { account: Account; onClose: 
   const m = useMutation({
     mutationFn: () => reset({ data: { userId: account.user_id, newPassword: pwd } }),
     onSuccess: () => { toast.success("Senha redefinida"); onClose(); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(traduzirErro(e)),
   });
   return (
     <Dialog open onOpenChange={onClose}>
