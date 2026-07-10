@@ -24,6 +24,9 @@ import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes
 import { Route as AppColaboradoresRouteImport } from './routes/app.colaboradores'
 import { Route as AppClientesRouteImport } from './routes/app.clientes'
 import { Route as AppOrdensIdRouteImport } from './routes/app.ordens.$id'
+import { Route as AppFinanceiroContasPagarRouteImport } from './routes/app.financeiro.contas-pagar'
+import { Route as AppAdminOficinasRouteImport } from './routes/app.admin.oficinas'
+import { Route as AppAdminFinanceiroRouteImport } from './routes/app.admin.financeiro'
 import { Route as AppAdminContasRouteImport } from './routes/app.admin.contas'
 import { Route as ApiPublicHooksFipeSyncRouteImport } from './routes/api/public/hooks/fipe-sync'
 
@@ -102,6 +105,22 @@ const AppOrdensIdRoute = AppOrdensIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppOrdensRoute,
 } as any)
+const AppFinanceiroContasPagarRoute =
+  AppFinanceiroContasPagarRouteImport.update({
+    id: '/contas-pagar',
+    path: '/contas-pagar',
+    getParentRoute: () => AppFinanceiroRoute,
+  } as any)
+const AppAdminOficinasRoute = AppAdminOficinasRouteImport.update({
+  id: '/admin/oficinas',
+  path: '/admin/oficinas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminFinanceiroRoute = AppAdminFinanceiroRouteImport.update({
+  id: '/admin/financeiro',
+  path: '/admin/financeiro',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminContasRoute = AppAdminContasRouteImport.update({
   id: '/admin/contas',
   path: '/admin/contas',
@@ -123,12 +142,15 @@ export interface FileRoutesByFullPath {
   '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
-  '/app/financeiro': typeof AppFinanceiroRoute
+  '/app/financeiro': typeof AppFinanceiroRouteWithChildren
   '/app/ordens': typeof AppOrdensRouteWithChildren
   '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
+  '/app/admin/financeiro': typeof AppAdminFinanceiroRoute
+  '/app/admin/oficinas': typeof AppAdminOficinasRoute
+  '/app/financeiro/contas-pagar': typeof AppFinanceiroContasPagarRoute
   '/app/ordens/$id': typeof AppOrdensIdRoute
   '/api/public/hooks/fipe-sync': typeof ApiPublicHooksFipeSyncRoute
 }
@@ -142,12 +164,15 @@ export interface FileRoutesByTo {
   '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
-  '/app/financeiro': typeof AppFinanceiroRoute
+  '/app/financeiro': typeof AppFinanceiroRouteWithChildren
   '/app/ordens': typeof AppOrdensRouteWithChildren
   '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
+  '/app/admin/financeiro': typeof AppAdminFinanceiroRoute
+  '/app/admin/oficinas': typeof AppAdminOficinasRoute
+  '/app/financeiro/contas-pagar': typeof AppFinanceiroContasPagarRoute
   '/app/ordens/$id': typeof AppOrdensIdRoute
   '/api/public/hooks/fipe-sync': typeof ApiPublicHooksFipeSyncRoute
 }
@@ -162,12 +187,15 @@ export interface FileRoutesById {
   '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
-  '/app/financeiro': typeof AppFinanceiroRoute
+  '/app/financeiro': typeof AppFinanceiroRouteWithChildren
   '/app/ordens': typeof AppOrdensRouteWithChildren
   '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
+  '/app/admin/financeiro': typeof AppAdminFinanceiroRoute
+  '/app/admin/oficinas': typeof AppAdminOficinasRoute
+  '/app/financeiro/contas-pagar': typeof AppFinanceiroContasPagarRoute
   '/app/ordens/$id': typeof AppOrdensIdRoute
   '/api/public/hooks/fipe-sync': typeof ApiPublicHooksFipeSyncRoute
 }
@@ -189,6 +217,9 @@ export interface FileRouteTypes {
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
+    | '/app/admin/financeiro'
+    | '/app/admin/oficinas'
+    | '/app/financeiro/contas-pagar'
     | '/app/ordens/$id'
     | '/api/public/hooks/fipe-sync'
   fileRoutesByTo: FileRoutesByTo
@@ -208,6 +239,9 @@ export interface FileRouteTypes {
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
+    | '/app/admin/financeiro'
+    | '/app/admin/oficinas'
+    | '/app/financeiro/contas-pagar'
     | '/app/ordens/$id'
     | '/api/public/hooks/fipe-sync'
   id:
@@ -227,6 +261,9 @@ export interface FileRouteTypes {
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
+    | '/app/admin/financeiro'
+    | '/app/admin/oficinas'
+    | '/app/financeiro/contas-pagar'
     | '/app/ordens/$id'
     | '/api/public/hooks/fipe-sync'
   fileRoutesById: FileRoutesById
@@ -347,6 +384,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrdensIdRouteImport
       parentRoute: typeof AppOrdensRoute
     }
+    '/app/financeiro/contas-pagar': {
+      id: '/app/financeiro/contas-pagar'
+      path: '/contas-pagar'
+      fullPath: '/app/financeiro/contas-pagar'
+      preLoaderRoute: typeof AppFinanceiroContasPagarRouteImport
+      parentRoute: typeof AppFinanceiroRoute
+    }
+    '/app/admin/oficinas': {
+      id: '/app/admin/oficinas'
+      path: '/admin/oficinas'
+      fullPath: '/app/admin/oficinas'
+      preLoaderRoute: typeof AppAdminOficinasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/admin/financeiro': {
+      id: '/app/admin/financeiro'
+      path: '/admin/financeiro'
+      fullPath: '/app/admin/financeiro'
+      preLoaderRoute: typeof AppAdminFinanceiroRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/admin/contas': {
       id: '/app/admin/contas'
       path: '/admin/contas'
@@ -363,6 +421,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AppFinanceiroRouteChildren {
+  AppFinanceiroContasPagarRoute: typeof AppFinanceiroContasPagarRoute
+}
+
+const AppFinanceiroRouteChildren: AppFinanceiroRouteChildren = {
+  AppFinanceiroContasPagarRoute: AppFinanceiroContasPagarRoute,
+}
+
+const AppFinanceiroRouteWithChildren = AppFinanceiroRoute._addFileChildren(
+  AppFinanceiroRouteChildren,
+)
 
 interface AppOrdensRouteChildren {
   AppOrdensIdRoute: typeof AppOrdensIdRoute
@@ -381,12 +451,14 @@ interface AppRouteChildren {
   AppColaboradoresRoute: typeof AppColaboradoresRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
-  AppFinanceiroRoute: typeof AppFinanceiroRoute
+  AppFinanceiroRoute: typeof AppFinanceiroRouteWithChildren
   AppOrdensRoute: typeof AppOrdensRouteWithChildren
   AppPecasRoute: typeof AppPecasRoute
   AppServicosRoute: typeof AppServicosRoute
   AppVeiculosRoute: typeof AppVeiculosRoute
   AppAdminContasRoute: typeof AppAdminContasRoute
+  AppAdminFinanceiroRoute: typeof AppAdminFinanceiroRoute
+  AppAdminOficinasRoute: typeof AppAdminOficinasRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -394,12 +466,14 @@ const AppRouteChildren: AppRouteChildren = {
   AppColaboradoresRoute: AppColaboradoresRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
-  AppFinanceiroRoute: AppFinanceiroRoute,
+  AppFinanceiroRoute: AppFinanceiroRouteWithChildren,
   AppOrdensRoute: AppOrdensRouteWithChildren,
   AppPecasRoute: AppPecasRoute,
   AppServicosRoute: AppServicosRoute,
   AppVeiculosRoute: AppVeiculosRoute,
   AppAdminContasRoute: AppAdminContasRoute,
+  AppAdminFinanceiroRoute: AppAdminFinanceiroRoute,
+  AppAdminOficinasRoute: AppAdminOficinasRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

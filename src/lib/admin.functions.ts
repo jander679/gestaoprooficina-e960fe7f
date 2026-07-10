@@ -171,11 +171,13 @@ export const listUnitStaff = createServerFn({ method: "POST" })
     await ensureSuperAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
-      .from("memberships")
-      .select("id,user_id,role,ativo,profiles:user_id(id,email,full_name,phone)")
-      .eq("unit_id", data.unitId);
+      .from("memberships").select("id,user_id,role,ativo").eq("unit_id", data.unitId);
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const ids = (rows ?? []).map((r) => r.user_id);
+    const { data: profiles } = ids.length
+      ? await supabaseAdmin.from("profiles").select("id,email,full_name,phone").in("id", ids)
+      : { data: [] as any[] };
+    return (rows ?? []).map((r) => ({ ...r, profiles: profiles?.find((p: any) => p.id === r.user_id) ?? null }));
   });
 
 export const updateMembership = createServerFn({ method: "POST" })

@@ -87,7 +87,7 @@ function AdminSaasFinancePage() {
     const rows = filteredInv.map((i) => [
       i.competencia,
       (i.units?.nome ?? "").replace(/,/g, " "),
-      (i.units?.companies?.cnpj ?? "") ?? "",
+      (i.units?.companies?.cnpj ?? ""),
       Number(i.valor).toFixed(2), i.vencimento, i.status, i.pago_em ?? "",
     ].join(",")).join("\n");
     const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
