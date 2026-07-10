@@ -64,18 +64,30 @@ export function ActiveUnitProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const qc = useQueryClient();
+
   useEffect(() => {
     if (!memberships.length) return;
-    if (!activeUnitId || !memberships.find((m) => m.unit_id === activeUnitId)) {
-      const first = memberships[0].unit_id;
-      setActive(first);
-      localStorage.setItem(KEY, first);
+    // Auto-seleciona só quando há uma única oficina; com várias, o usuário escolhe.
+    if (memberships.length === 1) {
+      const only = memberships[0].unit_id;
+      if (activeUnitId !== only) {
+        setActive(only);
+        localStorage.setItem(KEY, only);
+      }
+      return;
+    }
+    if (activeUnitId && !memberships.find((m) => m.unit_id === activeUnitId)) {
+      setActive(null);
+      localStorage.removeItem(KEY);
     }
   }, [memberships, activeUnitId]);
 
   const setActiveUnitId = (id: string) => {
     setActive(id);
     localStorage.setItem(KEY, id);
+    // Recarrega dados escopados por unidade (clientes, OS, peças, etc.)
+    qc.invalidateQueries();
   };
 
   const activeMembership = useMemo(
