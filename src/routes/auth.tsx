@@ -47,14 +47,21 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        // Auto-confirm está ativado no Supabase; login automático em seguida para evitar tela de "aguardando e-mail".
         const { error: sErr } = await supabase.auth.signInWithPassword({ email, password });
         if (sErr) throw sErr;
         toast.success("Cadastro enviado. Aguarde aprovação do Administrador Geral do Sistema.");
         nav({ to: "/pendente" });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        // Login: aceita e-mail direto ou nome de usuário do colaborador.
+        let loginEmail = email.trim();
+        if (!loginEmail.includes("@")) {
+          const { data: resolved, error: rErr } = await supabase.rpc("resolve_username_email", { _username: loginEmail });
+          if (rErr) throw rErr;
+          if (!resolved) throw new Error("Usuário ou senha inválidos.");
+          loginEmail = resolved as string;
+        }
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+        if (error) throw new Error("Usuário ou senha inválidos.");
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Erro");
