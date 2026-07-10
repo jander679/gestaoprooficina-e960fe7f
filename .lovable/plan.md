@@ -1,53 +1,68 @@
+## Objetivo
 
-# Plano: Peças, Colaboradores, Financeiro, OS + Base FIPE de veículos
+Separar permissões por perfil e corrigir a base FIPE nos veículos.
 
-## 1. Diagnóstico do "não está funcionando"
+## 1. Perfis e permissões
 
-Os itens Peças, Colaboradores e Financeiro aparecem na barra lateral (`src/components/app-shell.tsx`) mas os arquivos de rota **não existem** em `src/routes/`. Ao clicar, o TanStack Router não acha o match e a página fica vazia — não é bug de banco, é módulo faltando. Vou criar tudo agora, junto com Ordens de Serviço (que sustenta o Financeiro).
+Papéis já existem no enum (`super_admin`, `oficina_admin`, `mecanico`, `recepcionista`, `financeiro`). Falta aplicar as regras de acesso na UI e no backend.
 
-## 2. Módulos a criar (frontend)
+Matriz de acesso (por unidade):
 
-Cada tela segue o padrão já usado em Clientes/Veículos/Serviços: `useQuery` para listar, `useMutation` + `traduzirErro` para salvar/excluir, filtro por `activeUnitId`, textos em pt-BR via `t(...)`.
+| Módulo | super_admin | oficina_admin | mecanico | recepcionista | financeiro |
+|---|---|---|---|---|---|
+| Admin de contas (aprovar clientes do SaaS) | ✓ | — | — | — | — |
+| Configurações da oficina (empresa/unidades) | — | ✓ | — | — | — |
+| Colaboradores (convidar/editar) | — | ✓ | — | criar/convidar | — |
+| Clientes | — | ✓ | ✓ | ✓ | ver |
+| Veículos | — | ✓ | ✓ | ✓ | ver |
+| Serviços (catálogo) | — | ✓ | ver | ver | ver |
+| Peças / lotes | — | ✓ | ✓ | ver | ver |
+| Ordens de Serviço (abrir/fechar) | — | ✓ | ✓ | ✓ | ver |
+| Financeiro (pagamentos, relatórios) | — | ✓ | — | emitir nota da OS | ✓ |
+| Dashboard | — | ✓ | resumido | resumido | financeiro |
 
-- **`app.pecas.tsx`** — CRUD de peças (nome, SKU, unidade, preço padrão opcional, estoque mínimo). Botão "Ver lotes" abre diálogo com CRUD de `part_batches` (lote, quantidade, custo, preço de venda — todos opcionais exceto quantidade).
-- **`app.colaboradores.tsx`** — lista `memberships` da unidade ativa com nome/email vindos de `profiles`. Ações: **Convidar** (cria linha em `invitations` com role e envia link `/auth?invite=<token>`), **Ativar/Desativar** (toggle `ativo`), **Alterar cargo** (role: `oficina_admin | mecanico | recepcionista | financeiro`), **Remover**. Também lista convites pendentes com "Reenviar" e "Cancelar".
-- **`app.ordens.tsx`** — lista de OS da unidade (filtros: status, período, cliente). Botão "Nova OS" abre wizard/dialog: seleciona cliente → veículo do cliente → adiciona itens (`os_items`: tipo serviço/peça, referência ao catálogo, quantidade, valor unit., desconto) → status inicial `aberta`. Ao salvar chama `next_os_number(unit)` para numerar. Trigger `recalc_os_total` já cuida do total.
-- **`app.ordens.$id.tsx`** — detalhe/edição da OS: dados do cliente/veículo, itens (adicionar/editar/remover), pagamentos (`os_payments`: forma — dinheiro, PIX, débito, crédito, boleto — valor, data), mudança de status (aberta → em_execucao → aguardando_pagamento → concluida / cancelada), impressão.
-- **`app.financeiro.tsx`** — dashboard financeiro da unidade: cards de recebido no mês, a receber, ticket médio; gráfico simples de receita por dia (últimos 30d); tabela de pagamentos (`os_payments` join `service_orders`) com filtros de período e forma; exportar CSV.
+Observação: `super_admin` **não** vê dados de oficina — a sidebar dele mostra só "Admin de contas" e o próprio perfil.
 
-## 3. Ajustes de banco (uma migração)
+### O que vai mudar
 
-Só o necessário para os módulos acima:
+- **Sidebar (`src/components/app-shell.tsx`)**: filtrar itens por `activeMembership.role` e esconder tudo que for de oficina quando for `super_admin`.
+- **Guardas de rota**: cada `app.*.tsx` valida o papel no topo do componente; se não autorizado, mostra tela "Sem permissão".
+- **Helper novo** `src/lib/permissions.ts`: `can(role, action)` centralizando a matriz acima, usado por sidebar e páginas.
+- **RLS no banco**: hoje `memberships` autoriza qualquer papel a fazer tudo na unidade. Vou refinar as policies para:
+  - `services_catalog`, `parts`, `part_batches`: INSERT/UPDATE/DELETE só para `oficina_admin`; SELECT para qualquer membro.
+  - `os_payments`, relatórios financeiros: INSERT/UPDATE/DELETE só para `oficina_admin` e `financeiro`; `recepcionista` pode INSERT de pagamento vinculado à OS que ele fechou.
+  - `memberships`/convites: INSERT por `oficina_admin` e `recepcionista`; UPDATE/DELETE só `oficina_admin`.
+  - `service_orders` + `os_items`: todos os papéis operacionais podem criar/editar; apenas `oficina_admin` pode excluir.
+  - `companies`/`units`: INSERT/UPDATE só `oficina_admin`.
+- Função auxiliar `public.has_unit_role(_uid, _unit, _role[])` (SECURITY DEFINER) para evitar recursão nas policies.
 
-- Revisar policies de INSERT em `parts`, `part_batches`, `memberships`, `invitations`, `service_orders`, `os_items`, `os_payments` — garantir `WITH CHECK` permitindo membros ativos da `unit_id` (via `is_member(auth.uid(), unit_id)`), e `oficina_admin` para criar convites/colaboradores. Adicionar GRANTs faltantes se houver.
-- Coluna `forma_pagamento` em `os_payments` como enum `metodo_pagamento` (`dinheiro`, `pix`, `debito`, `credito`, `boleto`, `transferencia`) — se ainda não existir com esse tipo.
-- Índices em `os_payments(unit_id, paid_at)` e `service_orders(unit_id, status, created_at)` para o financeiro.
+## 2. Financeiro para recepcionista (nota da OS)
 
-## 4. Base de veículos (FIPE Brasil)
+Recepcionista não entra no módulo Financeiro completo, mas ganha o botão "Emitir nota / recibo" dentro da própria OS (usa o print atual). Nada muda em BD.
 
-Vou implementar como **FIPE (Brasil)** com espaço para expandir depois. Motivo em bom português: não existe base mundial única, gratuita e atualizada de marca/modelo/ano. FIPE cobre 100% do mercado brasileiro (carros, motos, caminhões), é oficial e é atualizada uma vez por mês.
+## 3. FIPE não funciona
 
-**Arquitetura:**
+Causa: as tabelas FIPE existem mas estão vazias — o endpoint `/api/public/hooks/fipe-sync` nunca foi chamado, então os `<Select>` de marca/modelo/ano aparecem sem opções.
 
-- Tabelas novas (public, read-only para `authenticated` e `anon`):
-  - `fipe_brands (id, tipo, codigo, nome)` — tipo ∈ carros/motos/caminhoes
-  - `fipe_models (id, brand_id, codigo, nome)`
-  - `fipe_years (id, model_id, codigo, nome, combustivel)`
-  - `fipe_sync_log (id, started_at, finished_at, status, notas)`
-- **Sincronização automática**: server route `/api/public/hooks/fipe-sync` (protegido por apikey do Supabase, padrão dos cron jobs) que consome a API pública `parallelum.com.br/fipe/api/v2` (sem chave) e faz upsert. `pg_cron` agenda **dia 5 de cada mês às 03:00** (`0 3 5 * *`) — a FIPE atualiza no início do mês.
-- **Bootstrap**: a mesma rota aceita `?full=1` para popular a base na primeira execução; disparo automático logo após a migração via `pg_net`.
-- **UI em `app.veiculos.tsx`** (mantendo o cadastro atual): no diálogo de novo/editar veículo, adicionar seletores encadeados **Tipo → Marca → Modelo → Ano** que preenchem `marca`, `modelo` e `ano` do veículo. Campo texto livre continua disponível para casos não listados (importados, veículos antigos etc.), então a base FIPE é assistiva, não obrigatória — o cadastro por parte da empresa segue igual.
+Correções:
 
-## 5. i18n
+- Adicionar botão **"Sincronizar base FIPE agora"** em `Configurações` (visível só para `oficina_admin` e `super_admin`), que faz `fetch("/api/public/hooks/fipe-sync", { method: "POST" })` e mostra progresso/toast. Sincroniza carros, motos e caminhões (leva alguns minutos na 1ª vez).
+- Endpoint atual só sincroniza marcas+modelos; adicionar também **anos** (`fipe_years`) por modelo, senão o 3º select fica vazio.
+- Tornar o endpoint **incremental e idempotente** (já usa upsert) e adicionar um parâmetro `?type=cars|motorcycles|trucks` para permitir sincronizar um tipo por vez sem timeout do worker.
+- Agendar `pg_cron` mensal chamando o hook (uma tarefa por tipo).
+- Fallback imediato: se a base ainda estiver vazia quando o usuário abrir o form de veículo, mostrar aviso "Base FIPE ainda não sincronizada — use cadastro manual" e alternar o switch automaticamente.
 
-Novas chaves em `src/lib/i18n.ts` para: `parts.*`, `batches.*`, `staff.*` (roles, convite, status), `orders.*` (status, itens, pagamentos), `finance.*` (cards, filtros, formas de pagamento), `fipe.*` (tipo, marca, modelo, ano, "usar catálogo FIPE", "não encontrei meu veículo").
+## 4. Verificação
 
-## 6. Verificação
+- Login como `oficina_admin`, `mecanico`, `recepcionista`, `financeiro` (contas de teste) — validar que sidebar e ações batem com a matriz.
+- Login como `super_admin` (thedinjoaopedro@gmail.com) — só vê Admin de contas.
+- Testar RLS por `curl`/console tentando POST proibido (ex.: mecânico criando peça) e confirmar 403.
+- Rodar sync FIPE, abrir cadastro de veículo, confirmar 3 selects populados (carros/motos/caminhões).
 
-Após implementar: navegar pelos 5 módulos criados, criar 1 peça + lote, convidar colaborador, abrir OS com serviço + peça, registrar pagamento, conferir financeiro. Rodar `/api/public/hooks/fipe-sync?full=1` uma vez e cadastrar um veículo pelo seletor FIPE.
+## Detalhes técnicos
 
-## Fora de escopo desta rodada
-
-- Base **mundial** de veículos: só FIPE (Brasil) agora. Se quiser cobrir mercado externo depois, integramos NHTSA vPIC (EUA, por VIN) ou uma base paga — te aviso o custo antes.
-- Emissão de NFS-e, integração bancária, comissão de mecânico por OS, kanban visual de OS — deixo para depois se você pedir.
-- Páginas `admin/empresas` e `admin/auditoria` (também estão na sidebar sem arquivo) — foco desta rodada é o que travou pra você.
+- Nova migração para: função `has_unit_role`, DROP + CREATE das policies afetadas, tabela `fipe_years` já existe (só usar).
+- `src/lib/permissions.ts` exporta `type Action` e `can(role, action)`.
+- Hook `useCan(action)` em cima de `useActiveUnit` para uso em componentes.
+- `app-shell.tsx` monta `items` filtrando por `can`.
+- Cada página protegida usa `<RequirePermission action="parts:write">…</RequirePermission>` para botões e um early-return para a página inteira quando o papel nem lê.
