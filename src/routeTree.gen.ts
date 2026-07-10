@@ -19,6 +19,7 @@ import { Route as AppServicosRouteImport } from './routes/app.servicos'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
 import { Route as AppClientesRouteImport } from './routes/app.clientes'
+import { Route as AppAdminContasRouteImport } from './routes/app.admin.contas'
 
 const PendenteRoute = PendenteRouteImport.update({
   id: '/pendente',
@@ -70,6 +71,11 @@ const AppClientesRoute = AppClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminContasRoute = AppAdminContasRouteImport.update({
+  id: '/admin/contas',
+  path: '/admin/contas',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
+  '/app/admin/contas': typeof AppAdminContasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
+  '/app/admin/contas': typeof AppAdminContasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
+  '/app/admin/contas': typeof AppAdminContasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/servicos'
     | '/app/veiculos'
+    | '/app/admin/contas'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/servicos'
     | '/app/veiculos'
+    | '/app/admin/contas'
   id:
     | '__root__'
     | '/'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/servicos'
     | '/app/veiculos'
+    | '/app/admin/contas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -227,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppClientesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin/contas': {
+      id: '/app/admin/contas'
+      path: '/admin/contas'
+      fullPath: '/app/admin/contas'
+      preLoaderRoute: typeof AppAdminContasRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -236,6 +255,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppServicosRoute: typeof AppServicosRoute
   AppVeiculosRoute: typeof AppVeiculosRoute
+  AppAdminContasRoute: typeof AppAdminContasRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -244,6 +264,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppServicosRoute: AppServicosRoute,
   AppVeiculosRoute: AppVeiculosRoute,
+  AppAdminContasRoute: AppAdminContasRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

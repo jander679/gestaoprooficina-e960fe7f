@@ -1,138 +1,67 @@
+## Objetivo
 
-# Plano — Sistema para Oficinas Mecânicas (SaaS multi-tenant)
+Provisionar o e-mail **thedinjoaopedro@gmail.com** como **Administrador Geral (super_admin)** do sistema, com poderes completos sobre contas de clientes (oficinas), e construir a tela de administração onde ele exerce esses poderes.
 
-Sistema web bilíngue (PT-BR padrão / EN) para gestão de oficinas mecânicas, com hierarquia:
-**Admin Geral do Sistema → Admin da Oficina (por CNPJ) → Unidades (endereços) → Colaboradores (Mecânico, Recepcionista, Financeiro)**.
+## 1. Criação do usuário Super Admin
 
-## 1. Backend (Lovable Cloud)
+O trigger `handle_new_user` só promove a `super_admin` o **primeiro** usuário que se cadastrar. Como o banco pode já ter outros usuários, farei a promoção de forma explícita e idempotente via migration:
 
-Habilitar Lovable Cloud. Autenticação por e-mail/senha + Google. Todo dado protegido por RLS.
+1. Criar o usuário em `auth.users` com a senha `Jander00*` (via `auth.admin` na migration, e-mail já confirmado) — se já existir, apenas reaproveita o `id`.
+2. Garantir `profiles` para esse usuário.
+3. Inserir em `public.user_roles` o papel `super_admin` (ON CONFLICT DO NOTHING).
+4. Inserir/atualizar `public.account_access` para `status = 'approved'`, `valid_until = NULL`.
+5. Registrar em `audit_log` a promoção (actor = próprio usuário do seed).
 
-### Modelo de dados (principais tabelas)
+Assim, no primeiro login com `thedinjoaopedro@gmail.com` / `Jander00*`, ele entra direto como Super Admin, sem passar pela fila de aprovação.
 
-```text
-app_role                 enum: super_admin, oficina_admin, mecanico, recepcionista, financeiro
-account_status           enum: pending, approved, rejected, paused, expired
-os_status                enum: aberta, em_andamento, aguardando_peca, aguardando_aprovacao, concluida, cancelada
-payment_method           enum: dinheiro, pix, credito, debito, boleto, transferencia, outro
+## 2. Página do Administrador Geral — `/app/admin/contas`
 
-companies                id, cnpj (unique), razao_social, nome_fantasia, criada_por (user_id)
-units (oficinas)         id, company_id, nome, endereco, cidade, uf, cep, telefone, ativa
-memberships              id, user_id, unit_id, role (app_role), ativo
-                         → controla quem acessa qual unidade e com qual papel
-account_access           id, user_id, status (account_status),
-                         valido_ate (date, nullable), pausado_em, motivo, atualizado_por
-                         → gate global do sistema (Super Admin controla)
+Rota protegida que exige `is_super_admin(auth.uid()) = true` (checado via hook `useActiveUnit().isSuperAdmin`; usuários comuns são redirecionados).
 
-customers                id, unit_id, nome, cpf_cnpj, telefone, email, endereco, observacoes
-vehicles                 id, unit_id, customer_id, placa, marca, modelo, ano, cor, km_atual, chassi, obs
+**Listagem de contas** (todas as `account_access` + join com `profiles` + empresa/unidades vinculadas):
 
-services_catalog         id, unit_id, nome, descricao, preco_padrao, tempo_estimado_min, ativo
-parts                    id, unit_id, nome, sku, preco_venda_padrao, estoque_total, ativo
-part_batches             id, part_id, lote (nullable), quantidade, preco_custo (nullable),
-                         preco_venda (nullable), validade (nullable), fornecedor (nullable)
-                         → lote e preço NÃO obrigatórios
+- Busca por nome/e-mail.
+- Filtros por status: `pending`, `approved`, `paused`, `expired`, `rejected`.
+- Colunas: usuário, empresa/CNPJ, status atual, `valid_until`, última alteração.
 
-service_orders (OS)      id, unit_id, numero (sequencial por unidade), customer_id, vehicle_id,
-                         mecanico_id, status, km_entrada, diagnostico, observacoes_internas,
-                         observacoes_cliente, data_abertura, data_conclusao, total
-os_items                 id, os_id, tipo (servico|peca|descricao_livre),
-                         referencia_id (nullable), descricao, quantidade,
-                         preco_unitario, desconto, subtotal
-                         → “descricao_livre” cobre serviços/valores extras
-os_payments              id, os_id, metodo (payment_method), valor, pago_em, observacao
+**Ações por conta (card/linha):**
 
-invitations              id, unit_id, email, role, token, expira_em, aceito_em, convidado_por
-audit_log                id, actor_id, acao, entidade, entidade_id, payload, criado_em
-```
+| Ação | Efeito |
+|---|---|
+| **Aprovar** | status → `approved` |
+| **Rejeitar** | status → `rejected` + motivo opcional |
+| **Play/Pause** (toggle) | alterna entre `approved` ↔ `paused`, grava `paused_em` e `motivo` |
+| **Definir "Liberado até DD/MM/AAAA"** | `valid_until = <data>`; gate marca como expirado automaticamente após a data |
+| **Remover validade** | `valid_until = NULL` (acesso indefinido) |
+| **Editar dados do cliente** | abre diálogo para editar `profiles.full_name`, `profiles.email` e, se necessário, `profiles.phone` |
+| **Redefinir senha** | dispara `supabase.auth.admin.updateUserById` com nova senha via server function `resetUserPassword` (exige `super_admin` no middleware) |
+| **Revogar acesso** | status → `rejected` + desativa todas as `memberships` do usuário |
 
-RLS: toda tabela de dados operacionais filtra por `unit_id` cruzando com `memberships` do usuário atual (via função `security definer`). `super_admin` fica em `user_roles` separada (padrão Lovable) e tem bypass explícito por policies próprias. Trigger de auto-criação de `account_access` (status=`pending`) no signup.
+Cada ação grava em `audit_log` (actor = super_admin, ação, entidade, payload com antes/depois).
 
-Sequencial de OS por unidade via função Postgres.
+## 3. Server functions necessárias (TanStack `createServerFn` + `requireSupabaseAuth`)
 
-### Server functions (TanStack `createServerFn`)
+Todas verificam `has_role(userId, 'super_admin')` antes de executar; caso contrário, `403`. Carregam `supabaseAdmin` dentro do handler (`await import('@/integrations/supabase/client.server')`) — nunca no topo.
 
-- `auth`: signup (cria pending), aceitar convite (token), trocar unidade ativa (grava em `user_metadata`).
-- `super_admin`: listar contas, aprovar/rejeitar, pausar/despausar (toggle), definir `valido_ate`, revogar.
-- `gate`: middleware `requireActiveAccount` que valida `account_access` (approved + não pausado + dentro da validade) — bloqueia todas as chamadas autenticadas quando inválido.
-- Cadastros CRUD (customers, vehicles, services, parts, batches, colaboradores/convites).
-- OS: criar, adicionar/remover itens, registrar pagamento, mudar status, calcular total.
-- Financeiro: listagem por período, contas a receber, fechamento de caixa por unidade/dia.
-- Convites por e-mail (via Lovable AI/Resend — decidir na build; MVP: link copiável).
+- `listAccounts()` → lista contas + profiles + empresas.
+- `setAccountStatus({ userId, status, motivo? })` → aprovar / rejeitar / pausar / retomar.
+- `setAccountValidity({ userId, validUntil | null })` → define ou remove data-limite.
+- `updateUserProfile({ userId, fullName?, email?, phone? })` → atualiza `profiles` e (se e-mail mudar) `auth.admin.updateUserById`.
+- `resetUserPassword({ userId, newPassword })` → `auth.admin.updateUserById({ password })`. Validação Zod (mínimo 8 caracteres).
+- `revokeUserAccess({ userId })` → status `rejected` + `memberships.ativo = false`.
 
-## 2. Rotas (TanStack Router, file-based)
+## 4. Gate de acesso (já existe, apenas confirmar)
 
-```text
-/                         landing pública (apresenta o produto)
-/auth                     login / cadastro / recuperar senha (público)
-/aceitar-convite/$token   aceitar convite (público)
-/pendente                 tela “Aguardando aprovação do administrador” (autenticado, sem gate)
-/bloqueado                tela “Acesso pausado / expirado” (autenticado, sem gate)
+O layout `/app` já usa `access_active()` + `account_access` para mandar para `/pendente` ou `/bloqueado`. Ao pausar ou definir `valid_until` no passado, o próximo carregamento do cliente cai no `/bloqueado` automaticamente — nada a mudar aí.
 
-/_authenticated/          layout gate: valida account_access → redireciona
-  /app/                   layout com sidebar + seletor de unidade no topo
-    /dashboard
-    /clientes             lista + /$id (detalhe/edit) + /novo
-    /veiculos             idem
-    /servicos             catálogo de serviços
-    /pecas                peças + aba “Lotes”
-    /ordens               lista de OS + /$id (editor com itens/pagamentos) + /nova
-    /colaboradores        lista + convidar
-    /financeiro           recebimentos, caixa, relatórios
-    /configuracoes        empresa, unidades (criar novo endereço no mesmo CNPJ)
+## 5. Navegação
 
-  /_super/                layout extra: exige role super_admin
-    /admin/contas         aprovar/pausar/definir validade (play/pause + date picker)
-    /admin/empresas       visão geral de todas empresas/unidades
-    /admin/auditoria      audit_log
-```
+Adicionar item **"Admin Geral"** no sidebar (`src/components/app-shell.tsx`), visível apenas quando `isSuperAdmin === true`, apontando para `/app/admin/contas`.
 
-Cada rota pública/leaf com `head()` próprio (title, description, OG). Home landing explica o produto.
+## 6. Fora do escopo desta etapa
 
-## 3. UI / Design
+Módulos ainda pendentes do plano geral (Peças, Ordens de Serviço, Colaboradores, Financeiro) seguem para as próximas etapas — este plano cobre apenas: (a) promover o e-mail informado a Super Admin, (b) entregar a página de administração com todos os controles descritos.
 
-- Stack shadcn/ui + Tailwind. Tema claro/escuro.
-- Paleta profissional: azul-petróleo primário, âmbar como acento (remete a oficina sem virar clichê laranja).
-- Tipografia: **Outfit** (títulos) + **Figtree** (corpo) via `@fontsource`.
-- Layout app: sidebar fixa com navegação, topbar com **seletor de unidade** (dropdown), avatar, toggle idioma PT/EN, toggle tema.
-- Tabelas com busca, filtros, paginação (TanStack Table).
-- Editor de OS estilo “nota fiscal”: cabeçalho cliente/veículo, linhas de itens (serviço, peça ou descrição livre), rodapé com totais e pagamentos.
-- Super Admin: cards por conta com botão **Play/Pause** grande e campo de data “Liberado até”.
+## Confirmação sobre a senha
 
-## 4. i18n
-
-`i18next` + `react-i18next`, arquivos `pt-BR.json` e `en.json`. Toggle salvo em `localStorage` + `user_metadata`.
-
-## 5. Fluxos-chave
-
-1. **Signup**: usuário cria conta → cria `company` (com CNPJ) + primeira `unit` → vira `oficina_admin` da unidade → `account_access = pending` → cai em `/pendente`.
-2. **Super Admin aprova**: status vira `approved` → usuário entra no `/app/dashboard`.
-3. **Pausar / expirar**: Super Admin clica Play/Pause ou define `valido_ate`. Próxima request cai no gate → `/bloqueado`.
-4. **Nova unidade mesmo CNPJ**: em `/configuracoes/unidades` o admin adiciona endereço → nova `unit` sob a mesma `company` → aparece no seletor de unidades.
-5. **Convite**: admin da oficina convida por e-mail com papel → destinatário aceita em `/aceitar-convite/$token` → cria `membership` para aquela unit.
-6. **OS**: recepcionista cria OS → adiciona serviços/peças/itens livres → mecânico atualiza status → financeiro/recepcionista registra pagamento(s) → OS concluída.
-
-## 6. Segurança
-
-- Roles em tabela separada (`user_roles` + `memberships`), nunca no profile.
-- Função `has_role` `SECURITY DEFINER` para RLS sem recursão.
-- Middleware `requireSupabaseAuth` + `requireActiveAccount` em toda server fn autenticada.
-- Validação Zod em todas as entradas.
-- Audit log de ações sensíveis (aprovação, pausa, exclusão).
-
-## 7. Entrega faseada dentro do “Tudo”
-
-Para caber em uma primeira build sólida, implemento nesta ordem — tudo entra, mas se algo ficar apertado, financeiro avançado (relatórios/fechamento de caixa detalhado) vira segunda leva:
-
-1. Cloud + schema + RLS + auth + gate de conta + Super Admin (aprovação, play/pause, validade).
-2. Empresas/unidades + seletor + colaboradores/convites + i18n + tema.
-3. Clientes, veículos, serviços, peças + lotes.
-4. Ordens de Serviço completas + pagamentos.
-5. Financeiro (recebimentos, caixa, relatórios) + dashboard.
-
-## Confirmações antes de construir
-
-- **Primeiro Super Admin**: crio um script/rota semente onde o primeiro e-mail que você me indicar é promovido automaticamente a `super_admin` na primeira execução. Me diga o e-mail agora ou depois.
-- **Convite por e-mail**: MVP entrega link copiável na tela; disparo de e-mail real posso adicionar na sequência (usa Lovable AI/Resend).
-
-Se estiver de acordo, aprovo e sigo para a construção.
+Você colou a senha `Jander00*` no chat. Vou usá-la exatamente para criar/atualizar o usuário via migration (server-side, com service role). Recomendo trocá-la após o primeiro login em uma futura tela de "Meu perfil" — quer que eu já inclua essa tela nesta etapa também?
