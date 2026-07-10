@@ -46,10 +46,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     nav({ to: "/auth" });
   }
 
-  async function toggleLang() {
-    const next = i18n.language === "en" ? "pt-BR" : "en";
-    await i18n.changeLanguage(next);
-  }
 
   return (
     <div className="flex min-h-screen w-full bg-background">
