@@ -107,6 +107,65 @@ export type Database = {
         }
         Relationships: []
       }
+      contas_pagar: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          created_by: string | null
+          descricao: string
+          fornecedor: string | null
+          id: string
+          metodo: string | null
+          observacao: string | null
+          pago_em: string | null
+          status: string
+          unit_id: string
+          updated_at: string
+          valor: number
+          vencimento: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao: string
+          fornecedor?: string | null
+          id?: string
+          metodo?: string | null
+          observacao?: string | null
+          pago_em?: string | null
+          status?: string
+          unit_id: string
+          updated_at?: string
+          valor: number
+          vencimento: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string
+          fornecedor?: string | null
+          id?: string
+          metodo?: string | null
+          observacao?: string | null
+          pago_em?: string | null
+          status?: string
+          unit_id?: string
+          updated_at?: string
+          valor?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_pagar_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           cpf_cnpj: string | null
@@ -372,6 +431,66 @@ export type Database = {
           },
         ]
       }
+      os_boletos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          linha_digitavel: string | null
+          observacao: string | null
+          os_id: string
+          pago_em: string | null
+          status: string
+          unit_id: string
+          updated_at: string
+          valor: number
+          vencimento: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          linha_digitavel?: string | null
+          observacao?: string | null
+          os_id: string
+          pago_em?: string | null
+          status?: string
+          unit_id: string
+          updated_at?: string
+          valor: number
+          vencimento: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          linha_digitavel?: string | null
+          observacao?: string | null
+          os_id?: string
+          pago_em?: string | null
+          status?: string
+          unit_id?: string
+          updated_at?: string
+          valor?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "os_boletos_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "os_boletos_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       os_items: {
         Row: {
           created_at: string
@@ -575,6 +694,47 @@ export type Database = {
           },
         ]
       }
+      payment_methods: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          taxa_percentual: number | null
+          tipo: string
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          taxa_percentual?: number | null
+          tipo: string
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          taxa_percentual?: number | null
+          tipo?: string
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_methods_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -607,6 +767,103 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      saas_invoices: {
+        Row: {
+          competencia: string
+          created_at: string
+          id: string
+          metodo: string | null
+          observacao: string | null
+          pago_em: string | null
+          status: string
+          unit_id: string
+          updated_at: string
+          valor: number
+          vencimento: string
+        }
+        Insert: {
+          competencia: string
+          created_at?: string
+          id?: string
+          metodo?: string | null
+          observacao?: string | null
+          pago_em?: string | null
+          status?: string
+          unit_id: string
+          updated_at?: string
+          valor: number
+          vencimento: string
+        }
+        Update: {
+          competencia?: string
+          created_at?: string
+          id?: string
+          metodo?: string | null
+          observacao?: string | null
+          pago_em?: string | null
+          status?: string
+          unit_id?: string
+          updated_at?: string
+          valor?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_invoices_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_subscriptions: {
+        Row: {
+          created_at: string
+          dia_vencimento: number
+          fim: string | null
+          id: string
+          inicio: string
+          plano: string
+          status: string
+          unit_id: string
+          updated_at: string
+          valor_mensal: number
+        }
+        Insert: {
+          created_at?: string
+          dia_vencimento?: number
+          fim?: string | null
+          id?: string
+          inicio?: string
+          plano?: string
+          status?: string
+          unit_id: string
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Update: {
+          created_at?: string
+          dia_vencimento?: number
+          fim?: string | null
+          id?: string
+          inicio?: string
+          plano?: string
+          status?: string
+          unit_id?: string
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_subscriptions_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: true
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_orders: {
         Row: {
@@ -901,7 +1158,13 @@ export type Database = {
       next_os_number: { Args: { _unit: string }; Returns: number }
     }
     Enums: {
-      account_status: "pending" | "approved" | "rejected" | "paused" | "expired"
+      account_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "paused"
+        | "expired"
+        | "revoked"
       app_role:
         | "super_admin"
         | "oficina_admin"
@@ -1052,7 +1315,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      account_status: ["pending", "approved", "rejected", "paused", "expired"],
+      account_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "paused",
+        "expired",
+        "revoked",
+      ],
       app_role: [
         "super_admin",
         "oficina_admin",
