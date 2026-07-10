@@ -154,6 +154,145 @@ export type Database = {
           },
         ]
       }
+      fipe_brands: {
+        Row: {
+          codigo: string
+          created_at: string
+          id: string
+          nome: string
+          tipo: Database["public"]["Enums"]["fipe_vehicle_type"]
+          updated_at: string
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          id?: string
+          nome: string
+          tipo: Database["public"]["Enums"]["fipe_vehicle_type"]
+          updated_at?: string
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          tipo?: Database["public"]["Enums"]["fipe_vehicle_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fipe_models: {
+        Row: {
+          brand_id: string
+          codigo: string
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          codigo: string
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          codigo?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fipe_models_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "fipe_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fipe_sync_log: {
+        Row: {
+          brands_count: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          models_count: number | null
+          notes: string | null
+          started_at: string
+          status: string
+          tipo: Database["public"]["Enums"]["fipe_vehicle_type"] | null
+          years_count: number | null
+        }
+        Insert: {
+          brands_count?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          models_count?: number | null
+          notes?: string | null
+          started_at?: string
+          status?: string
+          tipo?: Database["public"]["Enums"]["fipe_vehicle_type"] | null
+          years_count?: number | null
+        }
+        Update: {
+          brands_count?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          models_count?: number | null
+          notes?: string | null
+          started_at?: string
+          status?: string
+          tipo?: Database["public"]["Enums"]["fipe_vehicle_type"] | null
+          years_count?: number | null
+        }
+        Relationships: []
+      }
+      fipe_years: {
+        Row: {
+          codigo: string
+          combustivel: string | null
+          created_at: string
+          id: string
+          model_id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          codigo: string
+          combustivel?: string | null
+          created_at?: string
+          id?: string
+          model_id: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          codigo?: string
+          combustivel?: string | null
+          created_at?: string
+          id?: string
+          model_id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fipe_years_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "fipe_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           accepted_at: string | null
@@ -761,6 +900,7 @@ export type Database = {
         | "mecanico"
         | "recepcionista"
         | "financeiro"
+      fipe_vehicle_type: "cars" | "motorcycles" | "trucks"
       os_item_type: "servico" | "peca" | "descricao_livre"
       os_status:
         | "aberta"
@@ -912,6 +1052,7 @@ export const Constants = {
         "recepcionista",
         "financeiro",
       ],
+      fipe_vehicle_type: ["cars", "motorcycles", "trucks"],
       os_item_type: ["servico", "peca", "descricao_livre"],
       os_status: [
         "aberta",

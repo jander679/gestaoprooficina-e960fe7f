@@ -2,14 +2,14 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import {
-  Wrench, LayoutDashboard, Users, Car, Package, Boxes, ClipboardList,
-  UserCog, Wallet, Settings, ShieldCheck, LogOut, Moon, Sun, Globe, Building2,
+  Wrench, LayoutDashboard, Users, Car, Package, ClipboardList,
+  UserCog, Wallet, Settings, ShieldCheck, LogOut, Moon, Sun,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveUnit } from "@/hooks/use-active-unit";
 import { useTheme } from "@/hooks/use-theme";
-import i18n from "@/lib/i18n";
+
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -39,8 +39,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const superItems = [
     { to: "/app/admin/contas", icon: ShieldCheck, label: t("nav.accounts") },
-    { to: "/app/admin/empresas", icon: Building2, label: t("nav.companies") },
-    { to: "/app/admin/auditoria", icon: ClipboardList, label: t("nav.audit") },
   ];
 
   async function signOut() {
@@ -48,10 +46,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     nav({ to: "/auth" });
   }
 
-  async function toggleLang() {
-    const next = i18n.language === "en" ? "pt-BR" : "en";
-    await i18n.changeLanguage(next);
-  }
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -134,9 +128,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={toggleLang} title="Idioma">
-              <Globe className="h-4 w-4" />
-            </Button>
             <Button variant="ghost" size="icon" onClick={toggle} title="Tema">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>

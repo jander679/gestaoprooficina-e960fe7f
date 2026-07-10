@@ -16,10 +16,16 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppVeiculosRouteImport } from './routes/app.veiculos'
 import { Route as AppServicosRouteImport } from './routes/app.servicos'
+import { Route as AppPecasRouteImport } from './routes/app.pecas'
+import { Route as AppOrdensRouteImport } from './routes/app.ordens'
+import { Route as AppFinanceiroRouteImport } from './routes/app.financeiro'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
+import { Route as AppColaboradoresRouteImport } from './routes/app.colaboradores'
 import { Route as AppClientesRouteImport } from './routes/app.clientes'
+import { Route as AppOrdensIdRouteImport } from './routes/app.ordens.$id'
 import { Route as AppAdminContasRouteImport } from './routes/app.admin.contas'
+import { Route as ApiPublicHooksFipeSyncRouteImport } from './routes/api/public/hooks/fipe-sync'
 
 const PendenteRoute = PendenteRouteImport.update({
   id: '/pendente',
@@ -56,6 +62,21 @@ const AppServicosRoute = AppServicosRouteImport.update({
   path: '/servicos',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPecasRoute = AppPecasRouteImport.update({
+  id: '/pecas',
+  path: '/pecas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrdensRoute = AppOrdensRouteImport.update({
+  id: '/ordens',
+  path: '/ordens',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFinanceiroRoute = AppFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -66,15 +87,30 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppColaboradoresRoute = AppColaboradoresRouteImport.update({
+  id: '/colaboradores',
+  path: '/colaboradores',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppClientesRoute = AppClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOrdensIdRoute = AppOrdensIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppOrdensRoute,
+} as any)
 const AppAdminContasRoute = AppAdminContasRouteImport.update({
   id: '/admin/contas',
   path: '/admin/contas',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiPublicHooksFipeSyncRoute = ApiPublicHooksFipeSyncRouteImport.update({
+  id: '/api/public/hooks/fipe-sync',
+  path: '/api/public/hooks/fipe-sync',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -84,11 +120,17 @@ export interface FileRoutesByFullPath {
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
   '/app/clientes': typeof AppClientesRoute
+  '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/financeiro': typeof AppFinanceiroRoute
+  '/app/ordens': typeof AppOrdensRouteWithChildren
+  '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
+  '/app/ordens/$id': typeof AppOrdensIdRoute
+  '/api/public/hooks/fipe-sync': typeof ApiPublicHooksFipeSyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -97,11 +139,17 @@ export interface FileRoutesByTo {
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
   '/app/clientes': typeof AppClientesRoute
+  '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/financeiro': typeof AppFinanceiroRoute
+  '/app/ordens': typeof AppOrdensRouteWithChildren
+  '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
+  '/app/ordens/$id': typeof AppOrdensIdRoute
+  '/api/public/hooks/fipe-sync': typeof ApiPublicHooksFipeSyncRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -111,11 +159,17 @@ export interface FileRoutesById {
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
   '/app/clientes': typeof AppClientesRoute
+  '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/financeiro': typeof AppFinanceiroRoute
+  '/app/ordens': typeof AppOrdensRouteWithChildren
+  '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
+  '/app/ordens/$id': typeof AppOrdensIdRoute
+  '/api/public/hooks/fipe-sync': typeof ApiPublicHooksFipeSyncRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -126,11 +180,17 @@ export interface FileRouteTypes {
     | '/bloqueado'
     | '/pendente'
     | '/app/clientes'
+    | '/app/colaboradores'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/financeiro'
+    | '/app/ordens'
+    | '/app/pecas'
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
+    | '/app/ordens/$id'
+    | '/api/public/hooks/fipe-sync'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -139,11 +199,17 @@ export interface FileRouteTypes {
     | '/bloqueado'
     | '/pendente'
     | '/app/clientes'
+    | '/app/colaboradores'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/financeiro'
+    | '/app/ordens'
+    | '/app/pecas'
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
+    | '/app/ordens/$id'
+    | '/api/public/hooks/fipe-sync'
   id:
     | '__root__'
     | '/'
@@ -152,11 +218,17 @@ export interface FileRouteTypes {
     | '/bloqueado'
     | '/pendente'
     | '/app/clientes'
+    | '/app/colaboradores'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/financeiro'
+    | '/app/ordens'
+    | '/app/pecas'
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
+    | '/app/ordens/$id'
+    | '/api/public/hooks/fipe-sync'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -165,6 +237,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BloqueadoRoute: typeof BloqueadoRoute
   PendenteRoute: typeof PendenteRoute
+  ApiPublicHooksFipeSyncRoute: typeof ApiPublicHooksFipeSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -218,6 +291,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/pecas': {
+      id: '/app/pecas'
+      path: '/pecas'
+      fullPath: '/app/pecas'
+      preLoaderRoute: typeof AppPecasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/ordens': {
+      id: '/app/ordens'
+      path: '/ordens'
+      fullPath: '/app/ordens'
+      preLoaderRoute: typeof AppOrdensRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/financeiro': {
+      id: '/app/financeiro'
+      path: '/financeiro'
+      fullPath: '/app/financeiro'
+      preLoaderRoute: typeof AppFinanceiroRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/dashboard': {
       id: '/app/dashboard'
       path: '/dashboard'
@@ -232,12 +326,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/colaboradores': {
+      id: '/app/colaboradores'
+      path: '/colaboradores'
+      fullPath: '/app/colaboradores'
+      preLoaderRoute: typeof AppColaboradoresRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/clientes': {
       id: '/app/clientes'
       path: '/clientes'
       fullPath: '/app/clientes'
       preLoaderRoute: typeof AppClientesRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/app/ordens/$id': {
+      id: '/app/ordens/$id'
+      path: '/$id'
+      fullPath: '/app/ordens/$id'
+      preLoaderRoute: typeof AppOrdensIdRouteImport
+      parentRoute: typeof AppOrdensRoute
     }
     '/app/admin/contas': {
       id: '/app/admin/contas'
@@ -246,13 +354,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminContasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/hooks/fipe-sync': {
+      id: '/api/public/hooks/fipe-sync'
+      path: '/api/public/hooks/fipe-sync'
+      fullPath: '/api/public/hooks/fipe-sync'
+      preLoaderRoute: typeof ApiPublicHooksFipeSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AppOrdensRouteChildren {
+  AppOrdensIdRoute: typeof AppOrdensIdRoute
+}
+
+const AppOrdensRouteChildren: AppOrdensRouteChildren = {
+  AppOrdensIdRoute: AppOrdensIdRoute,
+}
+
+const AppOrdensRouteWithChildren = AppOrdensRoute._addFileChildren(
+  AppOrdensRouteChildren,
+)
+
 interface AppRouteChildren {
   AppClientesRoute: typeof AppClientesRoute
+  AppColaboradoresRoute: typeof AppColaboradoresRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppFinanceiroRoute: typeof AppFinanceiroRoute
+  AppOrdensRoute: typeof AppOrdensRouteWithChildren
+  AppPecasRoute: typeof AppPecasRoute
   AppServicosRoute: typeof AppServicosRoute
   AppVeiculosRoute: typeof AppVeiculosRoute
   AppAdminContasRoute: typeof AppAdminContasRoute
@@ -260,8 +391,12 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppClientesRoute: AppClientesRoute,
+  AppColaboradoresRoute: AppColaboradoresRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppFinanceiroRoute: AppFinanceiroRoute,
+  AppOrdensRoute: AppOrdensRouteWithChildren,
+  AppPecasRoute: AppPecasRoute,
   AppServicosRoute: AppServicosRoute,
   AppVeiculosRoute: AppVeiculosRoute,
   AppAdminContasRoute: AppAdminContasRoute,
@@ -275,6 +410,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BloqueadoRoute: BloqueadoRoute,
   PendenteRoute: PendenteRoute,
+  ApiPublicHooksFipeSyncRoute: ApiPublicHooksFipeSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

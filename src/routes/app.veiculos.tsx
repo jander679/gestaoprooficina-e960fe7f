@@ -1,6 +1,6 @@
 import { traduzirErro } from "@/lib/errors";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
@@ -27,6 +28,8 @@ interface Vehicle {
   customers?: { nome: string } | null;
 }
 
+type FipeType = "cars" | "motorcycles" | "trucks";
+
 const emptyV = { customer_id: "", placa: "", marca: "", modelo: "", ano: "", cor: "", km_atual: "", chassi: "", observacoes: "" };
 
 function VehiclesPage() {
@@ -37,6 +40,11 @@ function VehiclesPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [form, setForm] = useState<Record<string, string>>(emptyV);
+  const [useFipe, setUseFipe] = useState(true);
+  const [fipeType, setFipeType] = useState<FipeType>("cars");
+  const [fipeBrandId, setFipeBrandId] = useState("");
+  const [fipeModelId, setFipeModelId] = useState("");
+  const [fipeYearId, setFipeYearId] = useState("");
 
   const { data = [] } = useQuery({
     queryKey: ["vehicles", activeUnitId, q],
@@ -59,8 +67,53 @@ function VehiclesPage() {
     },
   });
 
+  const { data: fipeBrands = [] } = useQuery({
+    queryKey: ["fipe-brands", fipeType],
+    enabled: open && useFipe,
+    queryFn: async () => {
+      const { data } = await supabase.from("fipe_brands").select("id,nome").eq("tipo", fipeType).order("nome");
+      return (data ?? []) as Array<{ id: string; nome: string }>;
+    },
+  });
+  const { data: fipeModels = [] } = useQuery({
+    queryKey: ["fipe-models", fipeBrandId],
+    enabled: !!fipeBrandId,
+    queryFn: async () => {
+      const { data } = await supabase.from("fipe_models").select("id,nome").eq("brand_id", fipeBrandId).order("nome");
+      return (data ?? []) as Array<{ id: string; nome: string }>;
+    },
+  });
+  const { data: fipeYears = [] } = useQuery({
+    queryKey: ["fipe-years", fipeModelId],
+    enabled: !!fipeModelId,
+    queryFn: async () => {
+      const { data } = await supabase.from("fipe_years").select("id,nome").eq("model_id", fipeModelId).order("nome", { ascending: false });
+      return (data ?? []) as Array<{ id: string; nome: string }>;
+    },
+  });
+
+  useEffect(() => {
+    if (!fipeBrandId) return;
+    const b = fipeBrands.find((x) => x.id === fipeBrandId);
+    if (b) setForm((f) => ({ ...f, marca: b.nome }));
+  }, [fipeBrandId, fipeBrands]);
+  useEffect(() => {
+    if (!fipeModelId) return;
+    const m = fipeModels.find((x) => x.id === fipeModelId);
+    if (m) setForm((f) => ({ ...f, modelo: m.nome }));
+  }, [fipeModelId, fipeModels]);
+  useEffect(() => {
+    if (!fipeYearId) return;
+    const y = fipeYears.find((x) => x.id === fipeYearId);
+    if (y) {
+      const yr = parseInt(y.nome.split(" ")[0], 10);
+      if (!Number.isNaN(yr)) setForm((f) => ({ ...f, ano: String(yr) }));
+    }
+  }, [fipeYearId, fipeYears]);
+
   function openNew() {
     setEditing(null); setForm(emptyV); setOpen(true);
+    setFipeBrandId(""); setFipeModelId(""); setFipeYearId("");
   }
   function openEdit(v: Vehicle) {
     setEditing(v);
@@ -70,6 +123,8 @@ function VehiclesPage() {
       ano: v.ano?.toString() ?? "", cor: v.cor ?? "",
       km_atual: v.km_atual?.toString() ?? "", chassi: v.chassi ?? "", observacoes: v.observacoes ?? "",
     });
+    setUseFipe(false);
+    setFipeBrandId(""); setFipeModelId(""); setFipeYearId("");
     setOpen(true);
   }
 
@@ -143,8 +198,9 @@ function VehiclesPage() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>{editing ? t("common.edit") : t("common.new")}</DialogTitle></DialogHeader>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <Label>{t("customer.title").slice(0, -1)}<span className="text-destructive"> *</span></Label>
@@ -155,10 +211,61 @@ function VehiclesPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="col-span-2 flex items-center justify-between rounded-md border p-3">
+              <div>
+                <div className="text-sm font-medium">{t("vehicle.useCatalog")}</div>
+                <div className="text-xs text-muted-foreground">{useFipe ? "" : t("vehicle.manualEntry")}</div>
+              </div>
+              <Switch checked={useFipe} onCheckedChange={setUseFipe} />
+            </div>
+
+            {useFipe && (
+              <>
+                <div>
+                  <Label>{t("vehicle.vehicleType")}</Label>
+                  <Select value={fipeType} onValueChange={(v) => { setFipeType(v as FipeType); setFipeBrandId(""); setFipeModelId(""); setFipeYearId(""); }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cars">{t("vehicle.cars")}</SelectItem>
+                      <SelectItem value="motorcycles">{t("vehicle.motorcycles")}</SelectItem>
+                      <SelectItem value="trucks">{t("vehicle.trucks")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{t("vehicle.brand")}</Label>
+                  <Select value={fipeBrandId} onValueChange={(v) => { setFipeBrandId(v); setFipeModelId(""); setFipeYearId(""); }}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent className="max-h-72">{fipeBrands.map((b) => <SelectItem key={b.id} value={b.id}>{b.nome}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{t("vehicle.model")}</Label>
+                  <Select value={fipeModelId} onValueChange={(v) => { setFipeModelId(v); setFipeYearId(""); }} disabled={!fipeBrandId}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent className="max-h-72">{fipeModels.map((m) => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{t("vehicle.year")}</Label>
+                  <Select value={fipeYearId} onValueChange={setFipeYearId} disabled={!fipeModelId}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent className="max-h-72">{fipeYears.map((y) => <SelectItem key={y.id} value={y.id}>{y.nome}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            {!useFipe && (
+              <>
+                <div><Label>{t("vehicle.brand")}</Label><Input value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} /></div>
+                <div><Label>{t("vehicle.model")}</Label><Input value={form.modelo} onChange={(e) => setForm({ ...form, modelo: e.target.value })} /></div>
+                <div><Label>{t("vehicle.year")}</Label><Input type="number" value={form.ano} onChange={(e) => setForm({ ...form, ano: e.target.value })} /></div>
+              </>
+            )}
+
             <div><Label>{t("vehicle.plate")}</Label><Input value={form.placa} onChange={(e) => setForm({ ...form, placa: e.target.value.toUpperCase() })} /></div>
-            <div><Label>{t("vehicle.year")}</Label><Input type="number" value={form.ano} onChange={(e) => setForm({ ...form, ano: e.target.value })} /></div>
-            <div><Label>{t("vehicle.brand")}</Label><Input value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} /></div>
-            <div><Label>{t("vehicle.model")}</Label><Input value={form.modelo} onChange={(e) => setForm({ ...form, modelo: e.target.value })} /></div>
             <div><Label>{t("vehicle.color")}</Label><Input value={form.cor} onChange={(e) => setForm({ ...form, cor: e.target.value })} /></div>
             <div><Label>{t("vehicle.km")}</Label><Input type="number" value={form.km_atual} onChange={(e) => setForm({ ...form, km_atual: e.target.value })} /></div>
             <div className="col-span-2"><Label>{t("vehicle.chassis")}</Label><Input value={form.chassi} onChange={(e) => setForm({ ...form, chassi: e.target.value })} /></div>

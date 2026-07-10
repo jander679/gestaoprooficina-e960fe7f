@@ -1,6 +1,5 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import LanguageDetector from "i18next-browser-languagedetector";
 
 const resources = {
   "pt-BR": {
@@ -45,7 +44,9 @@ const resources = {
         saved: "Salvo com sucesso", deleted: "Excluído com sucesso",
         confirmDelete: "Tem certeza que deseja excluir este registro?",
         selectUnit: "Selecione uma unidade", selectCustomer: "Selecionar cliente",
-        all: "Todos", updated: "Atualizado com sucesso",
+        all: "Todos", updated: "Atualizado com sucesso", close: "Fechar",
+        add: "Adicionar", remove: "Remover", details: "Detalhes", print: "Imprimir",
+        from: "De", to: "Até", export: "Exportar",
       },
       errors: {
         generic: "Ocorreu um erro inesperado. Tente novamente.",
@@ -53,20 +54,49 @@ const resources = {
         session: "Sessão expirada. Faça login novamente.",
       },
       customer: { title: "Clientes", cpfCnpj: "CPF/CNPJ", notes: "Observações" },
-      vehicle: { title: "Veículos", plate: "Placa", brand: "Marca", model: "Modelo", year: "Ano", color: "Cor", km: "KM", chassis: "Chassi" },
+      vehicle: {
+        title: "Veículos", plate: "Placa", brand: "Marca", model: "Modelo",
+        year: "Ano", color: "Cor", km: "KM", chassis: "Chassi",
+        useCatalog: "Usar catálogo FIPE (Brasil)", manualEntry: "Digitar manualmente",
+        vehicleType: "Tipo", cars: "Carros", motorcycles: "Motos", trucks: "Caminhões",
+      },
       service: { title: "Catálogo de Serviços", defaultPrice: "Preço padrão", estimatedTime: "Tempo estimado (min)", active: "Ativo" },
-      part: { title: "Peças", sku: "SKU", defaultPrice: "Preço venda", batches: "Lotes", batch: "Lote", cost: "Custo", validity: "Validade", supplier: "Fornecedor" },
+      part: {
+        title: "Peças", sku: "SKU", defaultPrice: "Preço venda",
+        batches: "Lotes", batch: "Lote", cost: "Custo", validity: "Validade",
+        supplier: "Fornecedor", noBatches: "Sem lotes cadastrados.",
+        batchesFor: "Lotes de", stock: "Estoque",
+      },
       os: {
         title: "Ordens de Serviço", number: "OS #", customer: "Cliente", vehicle: "Veículo",
         mechanic: "Mecânico", diagnosis: "Diagnóstico", internalNotes: "Observações internas",
         customerNotes: "Observações ao cliente", items: "Itens", payments: "Pagamentos",
         addItem: "Adicionar item", addPayment: "Registrar pagamento",
+        new: "Nova OS", openedAt: "Aberta em", kmIn: "KM na entrada",
+        selectVehicle: "Selecione o veículo", selectMechanic: "Selecionar mecânico",
+        paid: "Pago", balance: "Saldo", subtotal: "Subtotal", discount: "Desconto",
+        catalogRef: "Referência do catálogo", freeDescription: "Descrição",
+        confirmCancel: "Cancelar esta OS?",
         status: { aberta: "Aberta", em_andamento: "Em andamento", aguardando_peca: "Aguardando peça", aguardando_aprovacao: "Aguardando aprovação", concluida: "Concluída", cancelada: "Cancelada" },
         method: { dinheiro: "Dinheiro", pix: "Pix", credito: "Crédito", debito: "Débito", boleto: "Boleto", transferencia: "Transferência", outro: "Outro" },
         itemType: { servico: "Serviço", peca: "Peça", descricao_livre: "Descrição livre" },
       },
-      staff: { title: "Colaboradores", invite: "Convidar", role: "Função", roles: { oficina_admin: "Admin da Oficina", mecanico: "Mecânico", recepcionista: "Recepcionista", financeiro: "Financeiro" }, pendingInvites: "Convites pendentes", copyLink: "Copiar link" },
-      finance: { title: "Financeiro", receipts: "Recebimentos", period: "Período", method: "Método", noPayments: "Nenhum pagamento no período." },
+      staff: {
+        title: "Colaboradores", invite: "Convidar colaborador", role: "Função",
+        active: "Ativos", pendingInvites: "Convites pendentes", copyLink: "Copiar link",
+        deactivate: "Desativar", activate: "Ativar", inviteEmail: "E-mail do convidado",
+        inviteSent: "Convite gerado. Copie e envie o link.",
+        inviteLinkCopied: "Link copiado.", resend: "Reenviar", cancel: "Cancelar convite",
+        empty: "Nenhum colaborador cadastrado.",
+        roles: { oficina_admin: "Admin da Oficina", mecanico: "Mecânico", recepcionista: "Recepcionista", financeiro: "Financeiro" },
+      },
+      finance: {
+        title: "Financeiro", receipts: "Recebimentos", period: "Período",
+        method: "Método", noPayments: "Nenhum pagamento no período.",
+        received: "Recebido no período", receivable: "A receber (aberto)",
+        ticket: "Ticket médio", byDay: "Recebimentos por dia",
+        byMethod: "Por forma de pagamento", os: "OS",
+      },
       settings: { title: "Configurações", company: "Empresa", units: "Unidades", newUnit: "Nova unidade", cnpj: "CNPJ", razaoSocial: "Razão social", nomeFantasia: "Nome fantasia" },
       super: {
         accounts: "Contas de usuários",
@@ -94,87 +124,17 @@ const resources = {
       },
     },
   },
-  en: {
-    translation: {
-      app: { name: "OficinaPro", tagline: "Complete management for auto shops" },
-      nav: {
-        dashboard: "Dashboard", customers: "Customers", vehicles: "Vehicles",
-        services: "Services", parts: "Parts", orders: "Service Orders",
-        staff: "Team", finance: "Finance", settings: "Settings",
-        superAdmin: "System Admin", accounts: "Accounts", companies: "Companies", audit: "Audit",
-      },
-      auth: {
-        signIn: "Sign in", signUp: "Create account", signOut: "Sign out",
-        email: "Email", password: "Password", fullName: "Full name",
-        continueWithGoogle: "Continue with Google",
-        haveAccount: "Have an account?", noAccount: "No account?",
-        signupSuccess: "Account created! Wait for admin approval.",
-        signupHint: "After signup, your account is pending approval by the system administrator.",
-      },
-      common: {
-        save: "Save", cancel: "Cancel", delete: "Delete", edit: "Edit",
-        new: "New", create: "Create", search: "Search", loading: "Loading...",
-        empty: "No records found.", back: "Back", confirm: "Confirm",
-        actions: "Actions", name: "Name", email: "Email", phone: "Phone",
-        address: "Address", createdAt: "Created", status: "Status", price: "Price",
-        quantity: "Qty", total: "Total", description: "Description", type: "Type",
-        yes: "Yes", no: "No", none: "None",
-      },
-      customer: { title: "Customers", cpfCnpj: "Tax ID", notes: "Notes" },
-      vehicle: { title: "Vehicles", plate: "Plate", brand: "Brand", model: "Model", year: "Year", color: "Color", km: "KM", chassis: "VIN" },
-      service: { title: "Service Catalog", defaultPrice: "Default price", estimatedTime: "Estimated time (min)", active: "Active" },
-      part: { title: "Parts", sku: "SKU", defaultPrice: "Sale price", batches: "Batches", batch: "Batch", cost: "Cost", validity: "Expiry", supplier: "Supplier" },
-      os: {
-        title: "Service Orders", number: "SO #", customer: "Customer", vehicle: "Vehicle",
-        mechanic: "Mechanic", diagnosis: "Diagnosis", internalNotes: "Internal notes",
-        customerNotes: "Customer notes", items: "Items", payments: "Payments",
-        addItem: "Add item", addPayment: "Add payment",
-        status: { aberta: "Open", em_andamento: "In progress", aguardando_peca: "Waiting parts", aguardando_aprovacao: "Waiting approval", concluida: "Completed", cancelada: "Cancelled" },
-        method: { dinheiro: "Cash", pix: "Pix", credito: "Credit", debito: "Debit", boleto: "Boleto", transferencia: "Transfer", outro: "Other" },
-        itemType: { servico: "Service", peca: "Part", descricao_livre: "Free text" },
-      },
-      staff: { title: "Team", invite: "Invite", role: "Role", roles: { oficina_admin: "Shop Admin", mecanico: "Mechanic", recepcionista: "Receptionist", financeiro: "Finance" }, pendingInvites: "Pending invites", copyLink: "Copy link" },
-      finance: { title: "Finance", receipts: "Receipts", period: "Period", method: "Method", noPayments: "No payments in period." },
-      settings: { title: "Settings", company: "Company", units: "Units", newUnit: "New unit", cnpj: "Tax ID", razaoSocial: "Legal name", nomeFantasia: "Trade name" },
-      super: {
-        accounts: "User accounts",
-        approve: "Approve", reject: "Reject", pause: "Pause", resume: "Resume",
-        setValidity: "Set validity", validUntil: "Valid until",
-        pending: "Pending", approved: "Approved", paused: "Paused", expired: "Expired", rejected: "Rejected",
-        remove: "Remove validity",
-      },
-      account: {
-        pending: "Your account is pending approval",
-        pendingDesc: "The system administrator needs to approve your registration. Please wait or reach out.",
-        blocked: "Access blocked",
-        blockedDesc: "Your access was paused or has expired. Contact the system administrator.",
-      },
-      landing: {
-        heroTitle: "Your shop in control, all in one system",
-        heroSub: "Service orders, parts with batches, customers, vehicles and finance — integrated, for one or many shops.",
-        cta: "Get started",
-        features: {
-          multi: { title: "Multi-shop", desc: "One account manages many units under the same tax ID, with data fully isolated." },
-          os: { title: "Complete service orders", desc: "Services, parts, free lines, multiple payments and vehicle history." },
-          parts: { title: "Parts & batches", desc: "Register parts; batch, cost and price are optional so you're never blocked." },
-          team: { title: "Organized team", desc: "Invite mechanics, receptionists and finance with dedicated permissions." },
-        },
-      },
-    },
-  },
 };
 
 if (!i18n.isInitialized) {
   i18n
-    .use(LanguageDetector)
     .use(initReactI18next)
     .init({
       resources,
-      lng: typeof window !== "undefined" ? (window.localStorage.getItem("i18nextLng") ?? "pt-BR") : "pt-BR",
+      lng: "pt-BR",
       fallbackLng: "pt-BR",
-      supportedLngs: ["pt-BR", "en"],
+      supportedLngs: ["pt-BR"],
       interpolation: { escapeValue: false },
-      detection: { order: ["localStorage"], caches: ["localStorage"] },
     });
 }
 
