@@ -37,8 +37,12 @@ function Pending() {
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-accent/20 text-accent-foreground">
           <Clock className="h-7 w-7" />
         </div>
-        <h1 className="mt-6 font-display text-2xl font-semibold">{t("account.pending")}</h1>
-        <p className="mt-3 text-sm text-muted-foreground">{t("account.pendingDesc")}</p>
+        <h1 className="mt-6 font-display text-2xl font-semibold">Cadastro em análise</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Sua conta foi criada com sucesso e aguarda aprovação do Administrador Geral do Sistema.
+          Assim que for liberada, você poderá acessar normalmente — não é necessário confirmar e-mail.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">Esta página atualiza automaticamente a cada 10 segundos.</p>
         <Button className="mt-8" variant="outline" onClick={() => supabase.auth.signOut().then(() => nav({ to: "/auth" }))}>
           {t("auth.signOut")}
         </Button>

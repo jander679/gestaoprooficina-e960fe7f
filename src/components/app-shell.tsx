@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import {
   Wrench, LayoutDashboard, Users, Car, Package, ClipboardList,
-  UserCog, Wallet, Settings, ShieldCheck, LogOut, Moon, Sun,
+  UserCog, Wallet, Settings, ShieldCheck, Building2, DollarSign,
+  LogOut, Moon, Sun, Receipt,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -37,20 +38,21 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/app/pecas", icon: Package, label: t("nav.parts"), action: "nav.parts" as const },
     { to: "/app/colaboradores", icon: UserCog, label: t("nav.staff"), action: "nav.staff" as const },
     { to: "/app/financeiro", icon: Wallet, label: t("nav.finance"), action: "nav.finance" as const },
+    { to: "/app/financeiro/contas-pagar", icon: Receipt, label: "Contas a Pagar", action: "nav.finance" as const },
     { to: "/app/configuracoes", icon: Settings, label: t("nav.settings"), action: "nav.settings" as const },
   ];
-  // Super admin do sistema NÃO vê módulos de oficina — só administra contas.
   const items = isSuperAdmin ? [] : allItems.filter((i) => can(role, i.action, false));
 
-  const superItems = isSuperAdmin
-    ? [{ to: "/app/admin/contas", icon: ShieldCheck, label: t("nav.accounts") }]
-    : [];
+  const superItems = isSuperAdmin ? [
+    { to: "/app/admin/contas", icon: ShieldCheck, label: "Contas de usuários" },
+    { to: "/app/admin/oficinas", icon: Building2, label: "Oficinas & Colaboradores" },
+    { to: "/app/admin/financeiro", icon: DollarSign, label: "Financeiro do SaaS" },
+  ] : [];
 
   async function signOut() {
     await supabase.auth.signOut();
     nav({ to: "/auth" });
   }
-
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -63,15 +65,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-2 text-sm">
           {items.map((i) => {
-            const active = pathname.startsWith(i.to);
+            const active = pathname === i.to || (i.to !== "/app/financeiro" && pathname.startsWith(i.to));
             return (
-              <Link
-                key={i.to}
-                to={i.to}
+              <Link key={i.to} to={i.to}
                 className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${
                   active ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"
-                }`}
-              >
+                }`}>
                 <i.icon className="h-4 w-4" />
                 {i.label}
               </Link>
@@ -102,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur">
           <div className="flex items-center gap-3">
-            {memberships.length > 0 ? (
+            {!isSuperAdmin && memberships.length > 0 ? (
               <Select value={activeUnitId ?? undefined} onValueChange={setActiveUnitId}>
                 <SelectTrigger className="h-9 w-[240px]">
                   <SelectValue placeholder="Selecionar unidade" />
@@ -122,10 +121,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Select>
             ) : (
               <span className="text-sm text-muted-foreground">
-                {isSuperAdmin ? "Modo Admin Geral" : "Configure sua empresa"}
+                {isSuperAdmin ? "Modo Administrador Geral do Sistema" : "Configure sua empresa"}
               </span>
             )}
-            {activeMembership && (
+            {activeMembership && !isSuperAdmin && (
               <span className="hidden rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground md:inline">
                 {t(`staff.roles.${activeMembership.role}`, activeMembership.role)}
               </span>

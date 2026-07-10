@@ -7,7 +7,7 @@ import { useActiveUnit } from "@/hooks/use-active-unit";
 import { PageHeader } from "@/components/page-header";
 import {
   listAccounts, setAccountStatus, setAccountValidity,
-  updateUserProfile, resetUserPassword, revokeUserAccess,
+  updateUserProfile, resetUserPassword, revokeUserAccess, deleteUserAccount,
 } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Play, Pause, Check, X, Calendar, KeyRound, Pencil, Ban, ShieldAlert } from "lucide-react";
+import { Play, Pause, Check, X, Calendar, KeyRound, Pencil, Ban, ShieldAlert, RotateCcw, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/app/admin/contas")({
   head: () => ({ meta: [{ title: "Admin Geral — Contas" }] }),
@@ -32,7 +32,7 @@ type Account = {
   updated_at: string;
   profile: { id: string; email: string; full_name: string | null; phone: string | null } | null;
   roles: string[];
-  memberships: Array<{ role: string; ativo: boolean; units: { nome: string; companies: { razao_social: string; nome_fantasia: string | null; cnpj: string } | null } | null }>;
+  memberships: Array<{ role: string; ativo: boolean; unit_id: string; units: { nome: string; companies: { razao_social: string; nome_fantasia: string | null; cnpj: string } | null } | null }>;
 };
 
 const statusStyle: Record<string, string> = {
@@ -41,6 +41,12 @@ const statusStyle: Record<string, string> = {
   paused: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
   expired: "bg-red-500/15 text-red-700 dark:text-red-400",
   rejected: "bg-red-500/15 text-red-700 dark:text-red-400",
+  revoked: "bg-red-500/15 text-red-700 dark:text-red-400",
+};
+
+const statusLabel: Record<string, string> = {
+  approved: "Aprovado", pending: "Pendente", paused: "Pausado",
+  expired: "Expirado", rejected: "Rejeitado", revoked: "Revogado",
 };
 
 function AdminAccountsPage() {
@@ -53,6 +59,7 @@ function AdminAccountsPage() {
   const setStatus = useServerFn(setAccountStatus);
   const setValidity = useServerFn(setAccountValidity);
   const revoke = useServerFn(revokeUserAccess);
+  const del = useServerFn(deleteUserAccount);
 
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string>("all");
@@ -69,7 +76,7 @@ function AdminAccountsPage() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-accounts"] });
 
   const mStatus = useMutation({
-    mutationFn: (v: { userId: string; status: "approved" | "rejected" | "paused"; reason?: string }) =>
+    mutationFn: (v: { userId: string; status: "approved" | "rejected" | "paused" | "revoked"; reason?: string }) =>
       setStatus({ data: v }),
     onSuccess: () => { toast.success("Status atualizado"); invalidate(); },
     onError: (e) => toast.error(traduzirErro(e)),
@@ -82,6 +89,11 @@ function AdminAccountsPage() {
   const mRevoke = useMutation({
     mutationFn: (userId: string) => revoke({ data: { userId } }),
     onSuccess: () => { toast.success("Acesso revogado"); invalidate(); },
+    onError: (e) => toast.error(traduzirErro(e)),
+  });
+  const mDelete = useMutation({
+    mutationFn: (userId: string) => del({ data: { userId } }),
+    onSuccess: () => { toast.success("Conta excluída definitivamente"); invalidate(); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
@@ -97,7 +109,7 @@ function AdminAccountsPage() {
 
   return (
     <div>
-      <PageHeader title="Administração Geral" subtitle="Aprove, pause, defina validade e gerencie contas de clientes do sistema." />
+      <PageHeader title="Administração Geral — Contas" subtitle="Aprove, pause, reintegre ou exclua contas de clientes do sistema." />
 
       <div className="mb-4 flex flex-wrap gap-3">
         <Input placeholder="Buscar por nome ou e-mail…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
@@ -110,6 +122,7 @@ function AdminAccountsPage() {
             <SelectItem value="paused">Pausados</SelectItem>
             <SelectItem value="expired">Expirados</SelectItem>
             <SelectItem value="rejected">Rejeitados</SelectItem>
+            <SelectItem value="revoked">Revogados</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -125,13 +138,14 @@ function AdminAccountsPage() {
             const effectiveStatus = expired ? "expired" : a.status;
             const isSuper = a.roles.includes("super_admin");
             const paused = a.status === "paused";
+            const revoked = a.status === "revoked" || a.status === "rejected";
             return (
               <div key={a.user_id} className="rounded-xl border bg-card p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="font-medium">{a.profile?.full_name || "—"}</div>
-                      <Badge variant="outline" className={statusStyle[effectiveStatus] ?? ""}>{effectiveStatus}</Badge>
+                      <Badge variant="outline" className={statusStyle[effectiveStatus] ?? ""}>{statusLabel[effectiveStatus] ?? effectiveStatus}</Badge>
                       {isSuper && (
                         <Badge className="bg-primary/15 text-primary">
                           <ShieldAlert className="mr-1 h-3 w-3" />Super Admin
@@ -173,6 +187,20 @@ function AdminAccountsPage() {
                         {paused ? <><Play className="mr-1 h-4 w-4" />Retomar</> : <><Pause className="mr-1 h-4 w-4" />Pausar</>}
                       </Button>
                     )}
+                    {revoked && !isSuper && (
+                      <>
+                        <Button size="sm" onClick={() => mStatus.mutate({ userId: a.user_id, status: "approved" })}>
+                          <RotateCcw className="mr-1 h-4 w-4" />Reintegrar
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => {
+                          if (confirm(`Excluir DEFINITIVAMENTE a conta ${a.profile?.email}? Esta ação NÃO pode ser desfeita.`) && confirm("Tem certeza absoluta? Todos os dados vinculados serão perdidos.")) {
+                            mDelete.mutate(a.user_id);
+                          }
+                        }}>
+                          <Trash2 className="mr-1 h-4 w-4" />Excluir definitivamente
+                        </Button>
+                      </>
+                    )}
                     <Button size="sm" variant="outline" onClick={() => setDateFor(a)}>
                       <Calendar className="mr-1 h-4 w-4" />Validade
                     </Button>
@@ -182,7 +210,7 @@ function AdminAccountsPage() {
                     <Button size="sm" variant="outline" onClick={() => setPwdFor(a)}>
                       <KeyRound className="mr-1 h-4 w-4" />Senha
                     </Button>
-                    {!isSuper && (
+                    {!isSuper && !revoked && (
                       <Button size="sm" variant="destructive" onClick={() => {
                         if (confirm("Revogar todo o acesso deste usuário?")) mRevoke.mutate(a.user_id);
                       }}>

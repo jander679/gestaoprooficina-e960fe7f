@@ -47,8 +47,11 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success(t("auth.signupSuccess"));
-        nav({ to: "/app/dashboard" });
+        // Auto-confirm está ativado no Supabase; login automático em seguida para evitar tela de "aguardando e-mail".
+        const { error: sErr } = await supabase.auth.signInWithPassword({ email, password });
+        if (sErr) throw sErr;
+        toast.success("Cadastro enviado. Aguarde aprovação do Administrador Geral do Sistema.");
+        nav({ to: "/pendente" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
