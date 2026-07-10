@@ -249,12 +249,22 @@ function VehiclesPage() {
                 </div>
                 <div>
                   <Label>{t("vehicle.year")}</Label>
-                  <Select value={fipeYearId} onValueChange={setFipeYearId} disabled={!fipeModelId}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent className="max-h-72">{fipeYears.map((y) => <SelectItem key={y.id} value={y.id}>{y.nome}</SelectItem>)}</SelectContent>
-                  </Select>
+                  {fipeYears.length > 0 ? (
+                    <Select value={fipeYearId} onValueChange={setFipeYearId} disabled={!fipeModelId}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent className="max-h-72">{fipeYears.map((y) => <SelectItem key={y.id} value={y.id}>{y.nome}</SelectItem>)}</SelectContent>
+                    </Select>
+                  ) : (
+                    <Input type="number" placeholder="Ex.: 2020" value={form.ano} onChange={(e) => setForm({ ...form, ano: e.target.value })} />
+                  )}
                 </div>
               </>
+            )}
+            {useFipe && fipeBrands.length === 0 && (
+              <div className="col-span-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-xs">
+                Catálogo FIPE vazio para este tipo. Vá em <b>Configurações → Base FIPE</b> e clique em sincronizar,
+                ou desative "Usar catálogo" e cadastre manualmente.
+              </div>
             )}
 
             {!useFipe && (
