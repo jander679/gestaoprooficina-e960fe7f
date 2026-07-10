@@ -1131,6 +1131,22 @@ export type Database = {
     }
     Functions: {
       access_active: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_company: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_manage_unit: {
+        Args: { _unit_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_read_profile: {
+        Args: { _actor_id: string; _profile_id: string }
+        Returns: boolean
+      }
+      can_update_profile: {
+        Args: { _actor_id: string; _profile_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1147,6 +1163,10 @@ export type Database = {
         Returns: boolean
       }
       is_company_admin: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_company_owner: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
