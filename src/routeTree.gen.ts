@@ -19,6 +19,7 @@ import { Route as AppServicosRouteImport } from './routes/app.servicos'
 import { Route as AppPecasRouteImport } from './routes/app.pecas'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
+import { Route as AppColaboradoresRouteImport } from './routes/app.colaboradores'
 import { Route as AppClientesRouteImport } from './routes/app.clientes'
 import { Route as AppAdminContasRouteImport } from './routes/app.admin.contas'
 
@@ -72,6 +73,11 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppColaboradoresRoute = AppColaboradoresRouteImport.update({
+  id: '/colaboradores',
+  path: '/colaboradores',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppClientesRoute = AppClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
   '/app/clientes': typeof AppClientesRoute
+  '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/pecas': typeof AppPecasRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
   '/app/clientes': typeof AppClientesRoute
+  '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/pecas': typeof AppPecasRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
   '/app/clientes': typeof AppClientesRoute
+  '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/pecas': typeof AppPecasRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/bloqueado'
     | '/pendente'
     | '/app/clientes'
+    | '/app/colaboradores'
     | '/app/configuracoes'
     | '/app/dashboard'
     | '/app/pecas'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/bloqueado'
     | '/pendente'
     | '/app/clientes'
+    | '/app/colaboradores'
     | '/app/configuracoes'
     | '/app/dashboard'
     | '/app/pecas'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/bloqueado'
     | '/pendente'
     | '/app/clientes'
+    | '/app/colaboradores'
     | '/app/configuracoes'
     | '/app/dashboard'
     | '/app/pecas'
@@ -251,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/colaboradores': {
+      id: '/app/colaboradores'
+      path: '/colaboradores'
+      fullPath: '/app/colaboradores'
+      preLoaderRoute: typeof AppColaboradoresRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/clientes': {
       id: '/app/clientes'
       path: '/clientes'
@@ -270,6 +289,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppClientesRoute: typeof AppClientesRoute
+  AppColaboradoresRoute: typeof AppColaboradoresRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppPecasRoute: typeof AppPecasRoute
@@ -280,6 +300,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppClientesRoute: AppClientesRoute,
+  AppColaboradoresRoute: AppColaboradoresRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppPecasRoute: AppPecasRoute,
