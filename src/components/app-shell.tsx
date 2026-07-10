@@ -2,8 +2,8 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import {
-  Wrench, LayoutDashboard, Users, Car, Package, Boxes, ClipboardList,
-  UserCog, Wallet, Settings, ShieldCheck, LogOut, Moon, Sun, Globe, Building2,
+  Wrench, LayoutDashboard, Users, Car, Package, ClipboardList,
+  UserCog, Wallet, Settings, ShieldCheck, LogOut, Moon, Sun,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
