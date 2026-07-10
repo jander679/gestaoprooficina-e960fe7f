@@ -48,17 +48,17 @@ export const listAccounts = createServerFn({ method: "GET" })
 
 export const setAccountStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { userId: string; status: "approved" | "rejected" | "paused"; motivo?: string }) =>
+  .inputValidator((d: { userId: string; status: "approved" | "rejected" | "paused"; reason?: string }) =>
     z.object({
       userId: z.string().uuid(),
       status: z.enum(["approved", "rejected", "paused"]),
-      motivo: z.string().max(500).optional(),
+      reason: z.string().max(500).optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await ensureSuperAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: any = { status: data.status, updated_by: context.userId, motivo: data.motivo ?? null };
+    const patch: any = { status: data.status, updated_by: context.userId, reason: data.reason ?? null };
     if (data.status === "paused") patch.paused_at = new Date().toISOString();
     if (data.status === "approved") patch.paused_at = null;
     const { error } = await supabaseAdmin.from("account_access").update(patch).eq("user_id", data.userId);

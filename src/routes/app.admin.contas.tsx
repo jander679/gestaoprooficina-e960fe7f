@@ -27,7 +27,7 @@ type Account = {
   status: string;
   valid_until: string | null;
   paused_at: string | null;
-  motivo: string | null;
+  reason: string | null;
   updated_at: string;
   profile: { id: string; email: string; full_name: string | null; phone: string | null } | null;
   roles: string[];
@@ -68,7 +68,7 @@ function AdminAccountsPage() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-accounts"] });
 
   const mStatus = useMutation({
-    mutationFn: (v: { userId: string; status: "approved" | "rejected" | "paused"; motivo?: string }) =>
+    mutationFn: (v: { userId: string; status: "approved" | "rejected" | "paused"; reason?: string }) =>
       setStatus({ data: v }),
     onSuccess: () => { toast.success("Status atualizado"); invalidate(); },
     onError: (e: Error) => toast.error(e.message),
@@ -151,7 +151,7 @@ function AdminAccountsPage() {
                     )}
                     <div className="mt-1 text-xs text-muted-foreground">
                       Liberado até: {a.valid_until ? new Date(a.valid_until).toLocaleDateString("pt-BR") : "indefinido"}
-                      {a.motivo ? ` · Motivo: ${a.motivo}` : ""}
+                      {a.reason ? ` · Motivo: ${a.reason}` : ""}
                     </div>
                   </div>
 
