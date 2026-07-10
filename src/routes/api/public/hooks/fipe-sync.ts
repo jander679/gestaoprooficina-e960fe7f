@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 type FipeType = "cars" | "motorcycles" | "trucks";
-const TYPES: FipeType[] = ["cars", "motorcycles", "trucks"];
 const BASE = "https://parallelum.com.br/fipe/api/v1";
 
 const MAP: Record<FipeType, string> = {
@@ -10,45 +9,83 @@ const MAP: Record<FipeType, string> = {
   trucks: "caminhoes",
 };
 
+// POST body: { type?: "cars"|"motorcycles"|"trucks"; sync_years?: boolean }
+// Sincroniza UM tipo por chamada (evita timeout). Se omitido, sincroniza "cars".
 export const Route = createFileRoute("/api/public/hooks/fipe-sync")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const started = new Date();
+        let body: { type?: FipeType; sync_years?: boolean } = {};
+        try { body = (await request.json()) as typeof body; } catch { /* empty body */ }
+        const type: FipeType = body.type ?? "cars";
+        const syncYears = !!body.sync_years;
 
         try {
-          let totalBrands = 0, totalModels = 0;
-          for (const type of TYPES) {
-            const path = MAP[type];
-            const brandsRes = await fetch(`${BASE}/${path}/marcas`);
-            if (!brandsRes.ok) continue;
-            const brands = (await brandsRes.json()) as Array<{ codigo: string | number; nome: string }>;
-            const brandRows = brands.map((b) => ({ tipo: type, codigo: String(b.codigo), nome: b.nome }));
-            if (brandRows.length) {
-              await supabaseAdmin.from("fipe_brands").upsert(brandRows as never, { onConflict: "tipo,codigo" });
-              totalBrands += brandRows.length;
-            }
+          let totalBrands = 0, totalModels = 0, totalYears = 0;
+          const path = MAP[type];
 
-            const { data: dbBrands } = await supabaseAdmin
-              .from("fipe_brands").select("id, codigo").eq("tipo", type);
-            const brandMap = new Map((dbBrands ?? []).map((b: { id: string; codigo: string }) => [b.codigo, b.id]));
+          const brandsRes = await fetch(`${BASE}/${path}/marcas`);
+          if (!brandsRes.ok) throw new Error(`FIPE marcas HTTP ${brandsRes.status}`);
+          const brands = (await brandsRes.json()) as Array<{ codigo: string | number; nome: string }>;
+          const brandRows = brands.map((b) => ({ tipo: type, codigo: String(b.codigo), nome: b.nome }));
+          if (brandRows.length) {
+            const { error } = await supabaseAdmin.from("fipe_brands").upsert(brandRows as never, { onConflict: "tipo,codigo" });
+            if (error) throw error;
+            totalBrands = brandRows.length;
+          }
 
-            for (const b of brands) {
-              const modelsRes = await fetch(`${BASE}/${path}/marcas/${b.codigo}/modelos`);
-              if (!modelsRes.ok) continue;
-              const modelsJson = (await modelsRes.json()) as { modelos: Array<{ codigo: string | number; nome: string }> };
+          const { data: dbBrands } = await supabaseAdmin
+            .from("fipe_brands").select("id, codigo").eq("tipo", type);
+          const brandMap = new Map((dbBrands ?? []).map((b: { id: string; codigo: string }) => [b.codigo, b.id]));
+
+          // Modelos em paralelo (batches)
+          const CONC = 8;
+          for (let i = 0; i < brands.length; i += CONC) {
+            const chunk = brands.slice(i, i + CONC);
+            await Promise.all(chunk.map(async (b) => {
               const brandId = brandMap.get(String(b.codigo));
-              if (!brandId) continue;
-              const rows = modelsJson.modelos.map((m) => ({
-                brand_id: brandId, codigo: String(m.codigo), nome: m.nome,
+              if (!brandId) return;
+              try {
+                const modelsRes = await fetch(`${BASE}/${path}/marcas/${b.codigo}/modelos`);
+                if (!modelsRes.ok) return;
+                const modelsJson = (await modelsRes.json()) as { modelos: Array<{ codigo: string | number; nome: string }> };
+                const rows = modelsJson.modelos.map((m) => ({
+                  brand_id: brandId, codigo: String(m.codigo), nome: m.nome,
+                }));
+                if (rows.length) {
+                  await supabaseAdmin.from("fipe_models").upsert(rows as never, { onConflict: "brand_id,codigo" });
+                  totalModels += rows.length;
+                }
+              } catch { /* skip brand */ }
+            }));
+          }
+
+          if (syncYears) {
+            const { data: dbModels } = await supabaseAdmin
+              .from("fipe_models").select("id, codigo, brand_id").in("brand_id", Array.from(brandMap.values()));
+            const brandCodigoById = new Map(Array.from(brandMap.entries()).map(([codigo, id]) => [id, codigo]));
+            const models = dbModels ?? [];
+            for (let i = 0; i < models.length; i += CONC) {
+              const chunk = models.slice(i, i + CONC);
+              await Promise.all(chunk.map(async (m: { id: string; codigo: string; brand_id: string }) => {
+                const brandCod = brandCodigoById.get(m.brand_id);
+                if (!brandCod) return;
+                try {
+                  const yr = await fetch(`${BASE}/${path}/marcas/${brandCod}/modelos/${m.codigo}/anos`);
+                  if (!yr.ok) return;
+                  const years = (await yr.json()) as Array<{ codigo: string; nome: string }>;
+                  const rows = years.map((y) => ({ model_id: m.id, codigo: String(y.codigo), nome: y.nome }));
+                  if (rows.length) {
+                    await supabaseAdmin.from("fipe_years").upsert(rows as never, { onConflict: "model_id,codigo" });
+                    totalYears += rows.length;
+                  }
+                } catch { /* skip */ }
               }));
-              if (rows.length) {
-                await supabaseAdmin.from("fipe_models").upsert(rows as never, { onConflict: "brand_id,codigo" });
-                totalModels += rows.length;
-              }
             }
           }
+
           await supabaseAdmin.from("fipe_sync_log").insert({
             started_at: started.toISOString(),
             finished_at: new Date().toISOString(),
@@ -56,7 +93,7 @@ export const Route = createFileRoute("/api/public/hooks/fipe-sync")({
             brands_count: totalBrands,
             models_count: totalModels,
           } as never);
-          return new Response(JSON.stringify({ ok: true, brands: totalBrands, models: totalModels }), {
+          return new Response(JSON.stringify({ ok: true, type, brands: totalBrands, models: totalModels, years: totalYears }), {
             headers: { "content-type": "application/json" },
           });
         } catch (err) {

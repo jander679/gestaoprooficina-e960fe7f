@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveUnit } from "@/hooks/use-active-unit";
 import { useTheme } from "@/hooks/use-theme";
+import { can, type Role } from "@/lib/permissions";
 
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,21 +26,25 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { theme, toggle } = useTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const items = [
-    { to: "/app/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
-    { to: "/app/ordens", icon: ClipboardList, label: t("nav.orders") },
-    { to: "/app/clientes", icon: Users, label: t("nav.customers") },
-    { to: "/app/veiculos", icon: Car, label: t("nav.vehicles") },
-    { to: "/app/servicos", icon: Wrench, label: t("nav.services") },
-    { to: "/app/pecas", icon: Package, label: t("nav.parts") },
-    { to: "/app/colaboradores", icon: UserCog, label: t("nav.staff") },
-    { to: "/app/financeiro", icon: Wallet, label: t("nav.finance") },
-    { to: "/app/configuracoes", icon: Settings, label: t("nav.settings") },
-  ];
+  const role = (activeMembership?.role as Role) ?? null;
 
-  const superItems = [
-    { to: "/app/admin/contas", icon: ShieldCheck, label: t("nav.accounts") },
+  const allItems = [
+    { to: "/app/dashboard", icon: LayoutDashboard, label: t("nav.dashboard"), action: "nav.dashboard" as const },
+    { to: "/app/ordens", icon: ClipboardList, label: t("nav.orders"), action: "nav.orders" as const },
+    { to: "/app/clientes", icon: Users, label: t("nav.customers"), action: "nav.customers" as const },
+    { to: "/app/veiculos", icon: Car, label: t("nav.vehicles"), action: "nav.vehicles" as const },
+    { to: "/app/servicos", icon: Wrench, label: t("nav.services"), action: "nav.services" as const },
+    { to: "/app/pecas", icon: Package, label: t("nav.parts"), action: "nav.parts" as const },
+    { to: "/app/colaboradores", icon: UserCog, label: t("nav.staff"), action: "nav.staff" as const },
+    { to: "/app/financeiro", icon: Wallet, label: t("nav.finance"), action: "nav.finance" as const },
+    { to: "/app/configuracoes", icon: Settings, label: t("nav.settings"), action: "nav.settings" as const },
   ];
+  // Super admin do sistema NÃO vê módulos de oficina — só administra contas.
+  const items = isSuperAdmin ? [] : allItems.filter((i) => can(role, i.action, false));
+
+  const superItems = isSuperAdmin
+    ? [{ to: "/app/admin/contas", icon: ShieldCheck, label: t("nav.accounts") }]
+    : [];
 
   async function signOut() {
     await supabase.auth.signOut();
