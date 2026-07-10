@@ -12,7 +12,7 @@ export const Route = createFileRoute("/app")({
 
 function AppLayout() {
   const { user, loading } = useAuth();
-  const { isSuperAdmin } = useActiveUnit();
+  const { isSuperAdmin, memberships } = useActiveUnit();
   const nav = useNavigate();
 
   const { data: access, isLoading: accessLoading } = useQuery({
