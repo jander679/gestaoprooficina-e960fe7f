@@ -128,9 +128,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={toggleLang} title="Idioma">
-              <Globe className="h-4 w-4" />
-            </Button>
             <Button variant="ghost" size="icon" onClick={toggle} title="Tema">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
