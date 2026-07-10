@@ -12,7 +12,7 @@ export const Route = createFileRoute("/app")({
 
 function AppLayout() {
   const { user, loading } = useAuth();
-  const { isSuperAdmin } = useActiveUnit();
+  const { isSuperAdmin, memberships } = useActiveUnit();
   const nav = useNavigate();
 
   const { data: access, isLoading: accessLoading } = useQuery({
@@ -40,8 +40,13 @@ function AppLayout() {
     } else if (access.status === "paused" || access.status === "expired" ||
                (access.valid_until && new Date(access.valid_until) < new Date(new Date().toDateString()))) {
       nav({ to: "/bloqueado" });
+    } else if (memberships.length === 0 && typeof window !== "undefined") {
+      const p = window.location.pathname;
+      if (p === "/app" || p === "/app/" || p === "/app/dashboard") {
+        nav({ to: "/app/configuracoes" });
+      }
     }
-  }, [loading, user, access, accessLoading, isSuperAdmin, nav]);
+  }, [loading, user, access, accessLoading, isSuperAdmin, memberships.length, nav]);
 
   if (loading || !user) return null;
 
