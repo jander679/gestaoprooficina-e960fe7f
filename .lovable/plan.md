@@ -1,41 +1,52 @@
-## Problema
+## Diagnóstico
 
-Quando o Administrador Geral do Sistema aprova um novo usuário, ele entra em `/app` e não vê **nenhuma opção no menu lateral** — nem "Configurações" para cadastrar sua oficina.
+O usuário aprovado (`teste@teste.com`, status=`approved`) recebe erro de permissão ao criar empresa em **Configurações → Empresa**. As policies estão no banco:
 
-Causa: o menu é filtrado por `can(role, ...)`, onde `role` vem de `activeMembership.role`. Um usuário recém-aprovado ainda **não tem membership** (só ganha `oficina_admin` via trigger *depois* de criar empresa/unidade). Sem membership → `role = null` → `can()` retorna `false` para tudo → sidebar vazio → impossível chegar em `/app/configuracoes` para criar a empresa. Catch-22.
+- `companies INSERT`: `criada_por = auth.uid() AND access_active(auth.uid())`
+- `units INSERT`: exige ser criador da empresa **ou** já ser `oficina_admin` da empresa
+- Trigger `tg_units_grant_creator_membership` só cria a membership de `oficina_admin` **se** o usuário for `criada_por` da empresa **ou** já for admin dela
 
-## Correção
+As policies estão corretas em teoria, mas há três causas prováveis do erro na prática:
 
-### 1. `src/components/app-shell.tsx` — modo "onboarding"
-Quando o usuário está aprovado, **não é super admin** e `memberships.length === 0`:
-- Mostrar no header a mensagem "Cadastre sua primeira oficina para liberar o sistema".
-- Renderizar no sidebar **apenas** o item **Configurações** (com destaque visual), para que ele consiga chegar na tela de cadastro de empresa/unidade.
-- Ocultar o seletor de unidade (não há nada para selecionar).
+1. **`access_active` pode falhar em SECURITY INVOKER dentro da policy** — a função é `SECURITY DEFINER` mas está sendo chamada com `auth.uid()` que dentro do contexto da policy funciona; mesmo assim, o padrão mais robusto é reescrever a policy sem depender dela no INSERT (usar apenas `criada_por = auth.uid()`), já que a aprovação já é validada no login/gate.
+2. **A mensagem "Sem permissão" vinda do trigger `tg_protect_super_admin`** — esse trigger dispara em INSERT/UPDATE de `profiles`, `user_roles`, `account_access`. Se por algum motivo o handle_new_user inseriu conflito, pode estar bloqueando. Precisa ser verificado.
+3. **O usuário está sem `memberships` e o `useActiveUnit` pode não permitir renderizar Configurações** — já foi tratado, mas confirmar redirect.
 
-### 2. `src/routes/app.tsx` — redirecionamento inicial
-Após os guards existentes (pending / bloqueado / super admin), adicionar:
-- Se `!isSuperAdmin && memberships.length === 0` e a rota atual é `/app` ou `/app/dashboard`, redirecionar para `/app/configuracoes`.
-- Assim o usuário aprovado cai direto na tela de "Cadastrar empresa".
+## Plano de correção
 
-### 3. `src/lib/permissions.ts` — helper `canOnboard`
-Adicionar util `isOnboarding(memberships)` para os componentes decidirem se estão no fluxo pré-cadastro (opcional, só para deixar a intenção explícita e reaproveitável).
+### 1. Reescrever RLS de `companies` e `units` para ser à prova de sessão
 
-### 4. Confirmar fluxo pós-cadastro
-Após o usuário cadastrar empresa + unidade em `/app/configuracoes`:
-- O trigger `tg_units_grant_creator_membership` já cria membership `oficina_admin`.
-- `useActiveUnit.refetch()` (já chamado nas mutations) recarrega memberships.
-- `activeUnitId` passa a apontar para a nova unidade → `role = 'oficina_admin'` → sidebar completo (Dashboard, OS, Clientes, Veículos, Serviços, Peças, Colaboradores, Financeiro, Contas a Pagar, Configurações) conforme a matriz em `permissions.ts`, que já está correta para esse perfil.
+- **companies INSERT**: `WITH CHECK (criada_por = auth.uid())` — remover dependência de `access_active` (o gate `/pendente` e `/bloqueado` já bloqueia usuários não-aprovados no frontend, e o super admin controla o status).
+- **companies UPDATE/DELETE**: permitir ao criador (`criada_por = auth.uid()`), a qualquer `oficina_admin` de qualquer unit da empresa, e ao `super_admin`.
+- **units INSERT**: permitir se o usuário for criador da empresa OU `oficina_admin` de qualquer unit existente da empresa OU `super_admin`. Manter isolamento por unit_id nos dados (customers, vehicles, OS etc.) — a criação de novas unidades não vaza dados entre elas.
+- **units UPDATE/DELETE**: idem — criador da empresa, admin da empresa, ou super_admin.
 
-Nenhuma mudança de banco / RLS / permissões é necessária — o problema é puramente de UI de onboarding.
+### 2. Garantir permissões completas do perfil `oficina_admin`
 
-## Arquivos a editar
+Verificar e ajustar (se necessário) as policies das tabelas de escopo por unidade para permitir ao `oficina_admin` **cadastrar e excluir** em toda a empresa:
 
-- `src/components/app-shell.tsx` — sidebar em modo onboarding + mensagem no header.
-- `src/routes/app.tsx` — redirect para `/app/configuracoes` quando sem memberships.
-- `src/lib/permissions.ts` — (opcional) helper `isOnboarding`.
+- `customers`, `vehicles`, `services_catalog`, `parts`, `part_batches`, `service_orders`, `os_items`, `os_payments`, `memberships` — INSERT/UPDATE/DELETE liberados quando o usuário for `oficina_admin` de qualquer unit da mesma empresa (não apenas da unidade específica), preservando `unit_id` para leitura escopada.
+- Isolamento de leitura por unidade continua: `SELECT` escopado por `is_member(auth.uid(), unit_id)` — **cada unidade mantém sua base separada** ao consultar.
 
-## Verificação
+### 3. Permitir alterar dados de perfil dos colaboradores criados
 
-1. Logar com usuário recém-aprovado → cai em `/app/configuracoes` com sidebar mostrando apenas "Configurações".
-2. Cadastrar empresa + primeira unidade → sidebar expande com todos os módulos do `oficina_admin`; seletor de unidade aparece no header.
-3. Cadastrar segunda unidade em "Configurações → Unidades" → aparece no seletor, dados isolados por `unit_id` (RLS já garante).
+- Policy em `profiles`: adicionar `UPDATE` permitido quando o alvo é membro de alguma unit onde `auth.uid()` é `oficina_admin`, mas nunca sobre um `super_admin` (trigger `tg_protect_super_admin` já garante isso).
+- Já existe server function `updateMembership` — validar que aceita chamadas de `oficina_admin`, não só super_admin.
+
+### 4. Melhorar tradução do erro
+
+No frontend `traduzirErro`, garantir que o código `42501` (permission denied) mostre mensagem clara em pt-BR indicando qual ação não foi permitida, para facilitar diagnóstico futuro.
+
+### 5. Validação
+
+Após migração:
+- Fazer login como `teste@teste.com`, criar empresa + unidade em Configurações — deve funcionar sem erro.
+- Criar segunda unidade — deve funcionar.
+- Cadastrar cliente, veículo, peça, serviço, colaborador — todos devem funcionar.
+- Confirmar via query que membership `oficina_admin` foi criada automaticamente pelo trigger em cada unit nova.
+
+## Arquivos afetados
+
+- **Migração SQL** (nova): reescreve policies de `companies`, `units`, `profiles` e amplia policies de `customers/vehicles/services_catalog/parts/part_batches/service_orders/os_items/os_payments/memberships` para o escopo de empresa do `oficina_admin`.
+- `src/lib/errors.ts`: mensagem clara para `42501`.
+- `src/lib/admin.functions.ts` (se necessário): abrir `updateMembership` para `oficina_admin` da mesma empresa.
