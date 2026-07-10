@@ -1,49 +1,53 @@
-# Correção: cadastro de empresa + idioma pt-BR nativo
 
-## Causa raiz do erro
+# Plano: Peças, Colaboradores, Financeiro, OS + Base FIPE de veículos
 
-Ao aprovar uma nova conta e o usuário tentar cadastrar sua empresa, o fluxo em `src/routes/app.configuracoes.tsx` faz três inserts em sequência: `companies` → `units` → `memberships`. As policies atuais bloqueiam o terceiro passo:
+## 1. Diagnóstico do "não está funcionando"
 
-- `memberships` INSERT exige `is_super_admin(uid)` OU `is_unit_admin(uid, unit_id)`.
-- Como o usuário ainda **não é** admin da unidade recém-criada (a membership é justamente o que estava tentando criar), o RLS rejeita — clássico problema ovo-e-galinha.
-- O mesmo acontece ao criar uma **nova unidade** dentro de uma empresa existente: o insert em `memberships` para dar acesso ao criador é bloqueado.
+Os itens Peças, Colaboradores e Financeiro aparecem na barra lateral (`src/components/app-shell.tsx`) mas os arquivos de rota **não existem** em `src/routes/`. Ao clicar, o TanStack Router não acha o match e a página fica vazia — não é bug de banco, é módulo faltando. Vou criar tudo agora, junto com Ordens de Serviço (que sustenta o Financeiro).
 
-Também há uma segunda falha latente: a política de INSERT de `units` só permite quem já é `oficina_admin` da company OU o `criada_por` da company — funciona no primeiro caso, mas travará convidados no futuro.
+## 2. Módulos a criar (frontend)
 
-## Correções
+Cada tela segue o padrão já usado em Clientes/Veículos/Serviços: `useQuery` para listar, `useMutation` + `traduzirErro` para salvar/excluir, filtro por `activeUnitId`, textos em pt-BR via `t(...)`.
 
-### 1. Banco de dados (migração)
+- **`app.pecas.tsx`** — CRUD de peças (nome, SKU, unidade, preço padrão opcional, estoque mínimo). Botão "Ver lotes" abre diálogo com CRUD de `part_batches` (lote, quantidade, custo, preço de venda — todos opcionais exceto quantidade).
+- **`app.colaboradores.tsx`** — lista `memberships` da unidade ativa com nome/email vindos de `profiles`. Ações: **Convidar** (cria linha em `invitations` com role e envia link `/auth?invite=<token>`), **Ativar/Desativar** (toggle `ativo`), **Alterar cargo** (role: `oficina_admin | mecanico | recepcionista | financeiro`), **Remover**. Também lista convites pendentes com "Reenviar" e "Cancelar".
+- **`app.ordens.tsx`** — lista de OS da unidade (filtros: status, período, cliente). Botão "Nova OS" abre wizard/dialog: seleciona cliente → veículo do cliente → adiciona itens (`os_items`: tipo serviço/peça, referência ao catálogo, quantidade, valor unit., desconto) → status inicial `aberta`. Ao salvar chama `next_os_number(unit)` para numerar. Trigger `recalc_os_total` já cuida do total.
+- **`app.ordens.$id.tsx`** — detalhe/edição da OS: dados do cliente/veículo, itens (adicionar/editar/remover), pagamentos (`os_payments`: forma — dinheiro, PIX, débito, crédito, boleto — valor, data), mudança de status (aberta → em_execucao → aguardando_pagamento → concluida / cancelada), impressão.
+- **`app.financeiro.tsx`** — dashboard financeiro da unidade: cards de recebido no mês, a receber, ticket médio; gráfico simples de receita por dia (últimos 30d); tabela de pagamentos (`os_payments` join `service_orders`) com filtros de período e forma; exportar CSV.
 
-Criar um trigger `AFTER INSERT` em `public.units` (SECURITY DEFINER) que garante uma `memberships` com role `oficina_admin` para o criador quando:
+## 3. Ajustes de banco (uma migração)
 
-- o usuário é o `criada_por` da company (primeira unidade), ou
-- o usuário já é `oficina_admin` de qualquer outra unidade da mesma company (nova unidade em company existente).
+Só o necessário para os módulos acima:
 
-Isso remove a necessidade de o cliente inserir a membership manualmente, fecha o buraco de RLS e mantém segurança (o trigger só concede acesso a quem já é dono/admin da company).
+- Revisar policies de INSERT em `parts`, `part_batches`, `memberships`, `invitations`, `service_orders`, `os_items`, `os_payments` — garantir `WITH CHECK` permitindo membros ativos da `unit_id` (via `is_member(auth.uid(), unit_id)`), e `oficina_admin` para criar convites/colaboradores. Adicionar GRANTs faltantes se houver.
+- Coluna `forma_pagamento` em `os_payments` como enum `metodo_pagamento` (`dinheiro`, `pix`, `debito`, `credito`, `boleto`, `transferencia`) — se ainda não existir com esse tipo.
+- Índices em `os_payments(unit_id, paid_at)` e `service_orders(unit_id, status, created_at)` para o financeiro.
 
-### 2. Frontend `src/routes/app.configuracoes.tsx`
+## 4. Base de veículos (FIPE Brasil)
 
-- Remover os `insert` manuais em `memberships` (agora feitos pelo trigger).
-- Após criar, chamar `refetch()` do `useActiveUnit` para carregar a nova membership.
-- Traduzir todas strings hardcoded restantes ("Empresa criada!", "Unidade criada!", "Cadastre uma empresa primeiro.", "Nome da primeira unidade", "Matriz", "Você não tem vínculo nesta unidade") usando `t(...)` com novas chaves em `settings.*`.
-- Traduzir mensagens de erro do toast: mapear `error.message` do Supabase (em inglês) para um texto pt-BR amigável (ex.: unique violation em CNPJ → "Já existe uma empresa cadastrada com este CNPJ.").
+Vou implementar como **FIPE (Brasil)** com espaço para expandir depois. Motivo em bom português: não existe base mundial única, gratuita e atualizada de marca/modelo/ano. FIPE cobre 100% do mercado brasileiro (carros, motos, caminhões), é oficial e é atualizada uma vez por mês.
 
-### 3. i18n global pt-BR nativo
+**Arquitetura:**
 
-Em `src/lib/i18n.ts`:
+- Tabelas novas (public, read-only para `authenticated` e `anon`):
+  - `fipe_brands (id, tipo, codigo, nome)` — tipo ∈ carros/motos/caminhoes
+  - `fipe_models (id, brand_id, codigo, nome)`
+  - `fipe_years (id, model_id, codigo, nome, combustivel)`
+  - `fipe_sync_log (id, started_at, finished_at, status, notas)`
+- **Sincronização automática**: server route `/api/public/hooks/fipe-sync` (protegido por apikey do Supabase, padrão dos cron jobs) que consome a API pública `parallelum.com.br/fipe/api/v2` (sem chave) e faz upsert. `pg_cron` agenda **dia 5 de cada mês às 03:00** (`0 3 5 * *`) — a FIPE atualiza no início do mês.
+- **Bootstrap**: a mesma rota aceita `?full=1` para popular a base na primeira execução; disparo automático logo após a migração via `pg_net`.
+- **UI em `app.veiculos.tsx`** (mantendo o cadastro atual): no diálogo de novo/editar veículo, adicionar seletores encadeados **Tipo → Marca → Modelo → Ano** que preenchem `marca`, `modelo` e `ano` do veículo. Campo texto livre continua disponível para casos não listados (importados, veículos antigos etc.), então a base FIPE é assistiva, não obrigatória — o cadastro por parte da empresa segue igual.
 
-- Trocar `fallbackLng` para `"pt-BR"` (já está) e **remover a detecção automática por navegador** para novos usuários: `detection: { order: ["localStorage"], caches: ["localStorage"] }` e definir `lng: "pt-BR"` como padrão inicial quando não houver preferência salva. Assim o sistema abre em pt-BR mesmo em navegadores em inglês.
-- Adicionar chaves faltantes usadas em `configuracoes`, mensagens de erro comuns (`errors.generic`, `errors.cnpjDuplicado`, `errors.semPermissao`, `errors.semSessao`), `pendente`, `bloqueado`, `admin.contas`, e mensagens padrão de toast.
+## 5. i18n
 
-### 4. Utilitário de erros
+Novas chaves em `src/lib/i18n.ts` para: `parts.*`, `batches.*`, `staff.*` (roles, convite, status), `orders.*` (status, itens, pagamentos), `finance.*` (cards, filtros, formas de pagamento), `fipe.*` (tipo, marca, modelo, ano, "usar catálogo FIPE", "não encontrei meu veículo").
 
-Criar `src/lib/errors.ts` com função `traduzirErro(err)` que reconhece códigos comuns do PostgREST (`23505`, `42501`, `PGRST116`, mensagens "permission denied", "row-level security", "duplicate key") e devolve texto pt-BR. Aplicar em todos os `onError` dos módulos já existentes (`clientes`, `veiculos`, `servicos`, `configuracoes`, `admin.contas`).
+## 6. Verificação
 
-### 5. Verificação
+Após implementar: navegar pelos 5 módulos criados, criar 1 peça + lote, convidar colaborador, abrir OS com serviço + peça, registrar pagamento, conferir financeiro. Rodar `/api/public/hooks/fipe-sync?full=1` uma vez e cadastrar um veículo pelo seletor FIPE.
 
-Após aplicar: fazer login com uma conta recém-aprovada, cadastrar empresa + primeira unidade, criar segunda unidade, e confirmar que a sidebar carrega o seletor de unidade sem erro. Verificar via console/network que nenhuma requisição retorna 403/42501.
+## Fora de escopo desta rodada
 
-## Fora de escopo
-
-- Não altero módulos ainda não implementados (Peças, OS, Financeiro) — apenas garanto que os textos base já estejam em pt-BR quando forem criados.
-- Não mexo em `client.ts`, `types.ts` ou `.env` (auto-gerados).
+- Base **mundial** de veículos: só FIPE (Brasil) agora. Se quiser cobrir mercado externo depois, integramos NHTSA vPIC (EUA, por VIN) ou uma base paga — te aviso o custo antes.
+- Emissão de NFS-e, integração bancária, comissão de mecânico por OS, kanban visual de OS — deixo para depois se você pedir.
+- Páginas `admin/empresas` e `admin/auditoria` (também estão na sidebar sem arquivo) — foco desta rodada é o que travou pra você.
