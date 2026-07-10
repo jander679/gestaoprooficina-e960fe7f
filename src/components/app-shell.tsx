@@ -126,7 +126,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Select>
             ) : (
               <span className="text-sm text-muted-foreground">
-                {isSuperAdmin ? "Modo Administrador Geral do Sistema" : "Configure sua empresa"}
+                {isSuperAdmin
+                  ? "Modo Administrador Geral do Sistema"
+                  : "Cadastre sua primeira oficina para liberar o sistema"}
               </span>
             )}
             {activeMembership && !isSuperAdmin && (
