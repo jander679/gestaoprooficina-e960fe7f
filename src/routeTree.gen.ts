@@ -16,6 +16,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppVeiculosRouteImport } from './routes/app.veiculos'
 import { Route as AppServicosRouteImport } from './routes/app.servicos'
+import { Route as AppPecasRouteImport } from './routes/app.pecas'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
 import { Route as AppClientesRouteImport } from './routes/app.clientes'
@@ -56,6 +57,11 @@ const AppServicosRoute = AppServicosRouteImport.update({
   path: '/servicos',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPecasRoute = AppPecasRouteImport.update({
+  id: '/pecas',
+  path: '/pecas',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/app/clientes': typeof AppClientesRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/app/clientes': typeof AppClientesRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/app/clientes': typeof AppClientesRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/app/clientes'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/pecas'
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/app/clientes'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/pecas'
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/app/clientes'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/pecas'
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
@@ -218,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/pecas': {
+      id: '/app/pecas'
+      path: '/pecas'
+      fullPath: '/app/pecas'
+      preLoaderRoute: typeof AppPecasRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/dashboard': {
       id: '/app/dashboard'
       path: '/dashboard'
@@ -253,6 +272,7 @@ interface AppRouteChildren {
   AppClientesRoute: typeof AppClientesRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppPecasRoute: typeof AppPecasRoute
   AppServicosRoute: typeof AppServicosRoute
   AppVeiculosRoute: typeof AppVeiculosRoute
   AppAdminContasRoute: typeof AppAdminContasRoute
@@ -262,6 +282,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppClientesRoute: AppClientesRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppPecasRoute: AppPecasRoute,
   AppServicosRoute: AppServicosRoute,
   AppVeiculosRoute: AppVeiculosRoute,
   AppAdminContasRoute: AppAdminContasRoute,
