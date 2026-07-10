@@ -28,7 +28,13 @@ function AppLayout() {
     if (loading) return;
     if (!user) { nav({ to: "/auth" }); return; }
     if (accessLoading) return;
-    if (isSuperAdmin) return; // super admin bypass
+    if (isSuperAdmin) {
+      // Super admin do sistema só gerencia contas.
+      if (typeof window !== "undefined" && window.location.pathname === "/app") {
+        nav({ to: "/app/admin/contas" });
+      }
+      return;
+    }
     if (!access || access.status === "pending" || access.status === "rejected") {
       nav({ to: "/pendente" });
     } else if (access.status === "paused" || access.status === "expired" ||
