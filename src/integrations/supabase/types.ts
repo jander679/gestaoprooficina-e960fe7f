@@ -881,6 +881,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_unit_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _unit_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_member: {
         Args: { _unit_id: string; _user_id: string }
         Returns: boolean
