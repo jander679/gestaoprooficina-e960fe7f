@@ -19,6 +19,9 @@ export function traduzirErro(err: unknown): string {
   if (code === "42501" || msg.includes("permission denied") || msg.includes("row-level security") || msg.includes("row level security") || msg.includes("violates row-level")) {
     return "Você não tem permissão para realizar esta ação.";
   }
+  if (msg.includes("infinite recursion detected in policy")) {
+    return "Erro nas permissões do sistema. Atualize a página e tente novamente.";
+  }
   if (code === "PGRST116" || msg.includes("no rows")) {
     return "Nenhum registro encontrado.";
   }
