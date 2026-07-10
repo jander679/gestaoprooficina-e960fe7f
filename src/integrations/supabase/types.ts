@@ -1146,6 +1146,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_company_admin: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_member: {
         Args: { _unit_id: string; _user_id: string }
         Returns: boolean
@@ -1156,6 +1160,7 @@ export type Database = {
         Returns: boolean
       }
       next_os_number: { Args: { _unit: string }; Returns: number }
+      unit_company: { Args: { _unit_id: string }; Returns: string }
     }
     Enums: {
       account_status:
