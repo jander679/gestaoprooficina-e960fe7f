@@ -16,6 +16,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppVeiculosRouteImport } from './routes/app.veiculos'
 import { Route as AppServicosRouteImport } from './routes/app.servicos'
+import { Route as AppSelecionarUnidadeRouteImport } from './routes/app.selecionar-unidade'
 import { Route as AppPecasRouteImport } from './routes/app.pecas'
 import { Route as AppOrdensRouteImport } from './routes/app.ordens'
 import { Route as AppFinanceiroRouteImport } from './routes/app.financeiro'
@@ -63,6 +64,11 @@ const AppVeiculosRoute = AppVeiculosRouteImport.update({
 const AppServicosRoute = AppServicosRouteImport.update({
   id: '/servicos',
   path: '/servicos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSelecionarUnidadeRoute = AppSelecionarUnidadeRouteImport.update({
+  id: '/selecionar-unidade',
+  path: '/selecionar-unidade',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPecasRoute = AppPecasRouteImport.update({
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/app/financeiro': typeof AppFinanceiroRouteWithChildren
   '/app/ordens': typeof AppOrdensRouteWithChildren
   '/app/pecas': typeof AppPecasRoute
+  '/app/selecionar-unidade': typeof AppSelecionarUnidadeRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/app/financeiro': typeof AppFinanceiroRouteWithChildren
   '/app/ordens': typeof AppOrdensRouteWithChildren
   '/app/pecas': typeof AppPecasRoute
+  '/app/selecionar-unidade': typeof AppSelecionarUnidadeRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/app/financeiro': typeof AppFinanceiroRouteWithChildren
   '/app/ordens': typeof AppOrdensRouteWithChildren
   '/app/pecas': typeof AppPecasRoute
+  '/app/selecionar-unidade': typeof AppSelecionarUnidadeRoute
   '/app/servicos': typeof AppServicosRoute
   '/app/veiculos': typeof AppVeiculosRoute
   '/app/admin/contas': typeof AppAdminContasRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/app/financeiro'
     | '/app/ordens'
     | '/app/pecas'
+    | '/app/selecionar-unidade'
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/app/financeiro'
     | '/app/ordens'
     | '/app/pecas'
+    | '/app/selecionar-unidade'
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/app/financeiro'
     | '/app/ordens'
     | '/app/pecas'
+    | '/app/selecionar-unidade'
     | '/app/servicos'
     | '/app/veiculos'
     | '/app/admin/contas'
@@ -326,6 +338,13 @@ declare module '@tanstack/react-router' {
       path: '/servicos'
       fullPath: '/app/servicos'
       preLoaderRoute: typeof AppServicosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/selecionar-unidade': {
+      id: '/app/selecionar-unidade'
+      path: '/selecionar-unidade'
+      fullPath: '/app/selecionar-unidade'
+      preLoaderRoute: typeof AppSelecionarUnidadeRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/pecas': {
@@ -454,6 +473,7 @@ interface AppRouteChildren {
   AppFinanceiroRoute: typeof AppFinanceiroRouteWithChildren
   AppOrdensRoute: typeof AppOrdensRouteWithChildren
   AppPecasRoute: typeof AppPecasRoute
+  AppSelecionarUnidadeRoute: typeof AppSelecionarUnidadeRoute
   AppServicosRoute: typeof AppServicosRoute
   AppVeiculosRoute: typeof AppVeiculosRoute
   AppAdminContasRoute: typeof AppAdminContasRoute
@@ -469,6 +489,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFinanceiroRoute: AppFinanceiroRouteWithChildren,
   AppOrdensRoute: AppOrdensRouteWithChildren,
   AppPecasRoute: AppPecasRoute,
+  AppSelecionarUnidadeRoute: AppSelecionarUnidadeRoute,
   AppServicosRoute: AppServicosRoute,
   AppVeiculosRoute: AppVeiculosRoute,
   AppAdminContasRoute: AppAdminContasRoute,
@@ -489,13 +510,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -136,6 +136,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {t(`staff.roles.${activeMembership.role}`, activeMembership.role)}
               </span>
             )}
+            {memberships.length > 1 && !isSuperAdmin && (
+              <Button variant="ghost" size="sm" onClick={() => nav({ to: "/app/selecionar-unidade" })} className="hidden md:inline-flex">
+                Trocar oficina
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-2">

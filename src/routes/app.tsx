@@ -12,7 +12,7 @@ export const Route = createFileRoute("/app")({
 
 function AppLayout() {
   const { user, loading } = useAuth();
-  const { isSuperAdmin, memberships } = useActiveUnit();
+  const { isSuperAdmin, memberships, activeUnitId } = useActiveUnit();
   const nav = useNavigate();
 
   const { data: access, isLoading: accessLoading } = useQuery({
@@ -29,7 +29,6 @@ function AppLayout() {
     if (!user) { nav({ to: "/auth" }); return; }
     if (accessLoading) return;
     if (isSuperAdmin) {
-      // Super admin do sistema só gerencia contas.
       if (typeof window !== "undefined" && window.location.pathname === "/app") {
         nav({ to: "/app/admin/contas" });
       }
@@ -45,8 +44,13 @@ function AppLayout() {
       if (p === "/app" || p === "/app/" || p === "/app/dashboard") {
         nav({ to: "/app/configuracoes" });
       }
+    } else if (memberships.length > 1 && !activeUnitId && typeof window !== "undefined") {
+      const p = window.location.pathname;
+      if (p !== "/app/selecionar-unidade") {
+        nav({ to: "/app/selecionar-unidade" });
+      }
     }
-  }, [loading, user, access, accessLoading, isSuperAdmin, memberships.length, nav]);
+  }, [loading, user, access, accessLoading, isSuperAdmin, memberships.length, activeUnitId, nav]);
 
   if (loading || !user) return null;
 

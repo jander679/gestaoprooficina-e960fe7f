@@ -277,3 +277,132 @@ export const generateMonthlyInvoices = createServerFn({ method: "POST" })
     }
     return { ok: true, created, competencia };
   });
+
+// ============ Cadastro de colaborador (login por username) ============
+
+async function ensureUnitAdmin(supabase: any, userId: string, unitId: string) {
+  const { data: isSuper } = await supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" });
+  if (isSuper) return;
+  const { data } = await supabase.rpc("is_unit_admin", { _user_id: userId, _unit_id: unitId });
+  if (!data) throw new Error("Você não é administrador desta oficina.");
+}
+
+function pseudoEmailFor(username: string) {
+  return `usuario+${username.toLowerCase()}@oficina.local`;
+}
+
+export const createStaffAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { unitId: string; fullName: string; username: string; password: string; role: string; phone?: string }) =>
+    z.object({
+      unitId: z.string().uuid(),
+      fullName: z.string().trim().min(2).max(200),
+      username: z.string().trim().min(3).max(50).regex(/^[a-zA-Z0-9._-]+$/, "Use apenas letras, números, ponto, hífen ou sublinhado."),
+      password: z.string().min(6).max(72),
+      role: z.enum(["oficina_admin", "mecanico", "recepcionista", "financeiro"]),
+      phone: z.string().trim().max(30).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ensureUnitAdmin(context.supabase, context.userId, data.unitId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Username único?
+    const { data: exists } = await supabaseAdmin
+      .from("profiles").select("id").eq("username", data.username).maybeSingle();
+    if (exists) throw new Error("Este nome de usuário já está em uso.");
+
+    const email = pseudoEmailFor(data.username);
+    const { data: created, error: cErr } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: data.fullName,
+        username: data.username,
+        created_by_admin: true,
+      },
+    });
+    if (cErr) throw new Error(cErr.message);
+    const newUserId = created.user!.id;
+
+    // Trigger handle_new_user cria profile + account_access(approved). Garantir username/phone.
+    await supabaseAdmin.from("profiles").update({
+      full_name: data.fullName,
+      username: data.username,
+      phone: data.phone ?? null,
+    }).eq("id", newUserId);
+
+    await supabaseAdmin.from("account_access").update({ status: "approved" }).eq("user_id", newUserId);
+
+    const { error: mErr } = await supabaseAdmin.from("memberships").insert({
+      user_id: newUserId, unit_id: data.unitId, role: data.role, ativo: true,
+    });
+    if (mErr) throw new Error(mErr.message);
+
+    await logAudit(context.userId, "staff.create", "memberships", newUserId, { unitId: data.unitId, role: data.role, username: data.username });
+    return { ok: true, userId: newUserId };
+  });
+
+export const addStaffToUnit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { unitId: string; username: string; role: string }) =>
+    z.object({
+      unitId: z.string().uuid(),
+      username: z.string().trim().min(3).max(50),
+      role: z.enum(["oficina_admin", "mecanico", "recepcionista", "financeiro"]),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ensureUnitAdmin(context.supabase, context.userId, data.unitId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: prof } = await supabaseAdmin.from("profiles").select("id").eq("username", data.username).maybeSingle();
+    if (!prof) throw new Error("Usuário não encontrado.");
+    const { error } = await supabaseAdmin.from("memberships").insert({
+      user_id: prof.id, unit_id: data.unitId, role: data.role, ativo: true,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const updateStaffCredentials = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string; unitId: string; username?: string; password?: string; fullName?: string; phone?: string }) =>
+    z.object({
+      userId: z.string().uuid(),
+      unitId: z.string().uuid(),
+      username: z.string().trim().min(3).max(50).regex(/^[a-zA-Z0-9._-]+$/).optional(),
+      password: z.string().min(6).max(72).optional(),
+      fullName: z.string().trim().max(200).optional(),
+      phone: z.string().trim().max(30).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ensureUnitAdmin(context.supabase, context.userId, data.unitId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (data.username) {
+      const { data: exists } = await supabaseAdmin
+        .from("profiles").select("id").eq("username", data.username).neq("id", data.userId).maybeSingle();
+      if (exists) throw new Error("Este nome de usuário já está em uso.");
+      const newEmail = pseudoEmailFor(data.username);
+      const { error: aErr } = await supabaseAdmin.auth.admin.updateUserById(data.userId, { email: newEmail, email_confirm: true });
+      if (aErr) throw new Error(aErr.message);
+      await supabaseAdmin.from("profiles").update({ username: data.username, email: newEmail }).eq("id", data.userId);
+    }
+
+    if (data.password) {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, { password: data.password });
+      if (error) throw new Error(error.message);
+    }
+
+    const patch: any = {};
+    if (data.fullName !== undefined) patch.full_name = data.fullName;
+    if (data.phone !== undefined) patch.phone = data.phone;
+    if (Object.keys(patch).length) {
+      await supabaseAdmin.from("profiles").update(patch).eq("id", data.userId);
+    }
+
+    await logAudit(context.userId, "staff.update", "profiles", data.userId, { hasPassword: !!data.password, username: data.username ?? null });
+    return { ok: true };
+  });

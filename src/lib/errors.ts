@@ -37,8 +37,11 @@ export function traduzirErro(err: unknown): string {
   if (msg.includes("email not confirmed")) {
     return "Confirme seu e-mail para continuar.";
   }
-  if (msg.includes("user already registered")) {
-    return "Este e-mail já está cadastrado.";
+  if (msg.includes("user already registered") || msg.includes("já está em uso") || msg.includes("nome de usuário")) {
+    return anyErr?.message?.includes("usuário") ? anyErr!.message! : "Este e-mail já está cadastrado.";
+  }
+  if (msg.includes("usuário ou senha inválidos") || msg.includes("invalid login") || msg.includes("invalid credentials")) {
+    return "Usuário ou senha inválidos.";
   }
   if (msg.includes("password should be at least")) {
     return "A senha deve ter pelo menos 6 caracteres.";

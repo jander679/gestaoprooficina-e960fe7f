@@ -47,14 +47,21 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        // Auto-confirm está ativado no Supabase; login automático em seguida para evitar tela de "aguardando e-mail".
         const { error: sErr } = await supabase.auth.signInWithPassword({ email, password });
         if (sErr) throw sErr;
         toast.success("Cadastro enviado. Aguarde aprovação do Administrador Geral do Sistema.");
         nav({ to: "/pendente" });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        // Login: aceita e-mail direto ou nome de usuário do colaborador.
+        let loginEmail = email.trim();
+        if (!loginEmail.includes("@")) {
+          const { data: resolved, error: rErr } = await supabase.rpc("resolve_username_email", { _username: loginEmail });
+          if (rErr) throw rErr;
+          if (!resolved) throw new Error("Usuário ou senha inválidos.");
+          loginEmail = resolved as string;
+        }
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+        if (error) throw new Error("Usuário ou senha inválidos.");
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Erro");
@@ -94,8 +101,19 @@ function AuthPage() {
             </div>
           )}
           <div className="space-y-2">
-            <Label>{t("auth.email")}</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Label>{mode === "signup" ? t("auth.email") : "Usuário ou e-mail"}</Label>
+            <Input
+              type={mode === "signup" ? "email" : "text"}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete={mode === "signup" ? "email" : "username"}
+            />
+            {mode === "signin" && (
+              <p className="text-xs text-muted-foreground">
+                Colaboradores: use o nome de usuário criado pelo administrador da oficina.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>{t("auth.password")}</Label>

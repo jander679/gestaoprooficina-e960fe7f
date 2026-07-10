@@ -745,6 +745,7 @@ export type Database = {
           locale: string
           phone: string | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -755,6 +756,7 @@ export type Database = {
           locale?: string
           phone?: string | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -765,6 +767,7 @@ export type Database = {
           locale?: string
           phone?: string | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -1180,6 +1183,7 @@ export type Database = {
         Returns: boolean
       }
       next_os_number: { Args: { _unit: string }; Returns: number }
+      resolve_username_email: { Args: { _username: string }; Returns: string }
       unit_company: { Args: { _unit_id: string }; Returns: string }
     }
     Enums: {
