@@ -18,6 +18,7 @@ import { Route as AppVeiculosRouteImport } from './routes/app.veiculos'
 import { Route as AppServicosRouteImport } from './routes/app.servicos'
 import { Route as AppPecasRouteImport } from './routes/app.pecas'
 import { Route as AppOrdensRouteImport } from './routes/app.ordens'
+import { Route as AppFinanceiroRouteImport } from './routes/app.financeiro'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
 import { Route as AppColaboradoresRouteImport } from './routes/app.colaboradores'
@@ -70,6 +71,11 @@ const AppOrdensRoute = AppOrdensRouteImport.update({
   path: '/ordens',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFinanceiroRoute = AppFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/financeiro': typeof AppFinanceiroRoute
   '/app/ordens': typeof AppOrdensRouteWithChildren
   '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/financeiro': typeof AppFinanceiroRoute
   '/app/ordens': typeof AppOrdensRouteWithChildren
   '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/financeiro': typeof AppFinanceiroRoute
   '/app/ordens': typeof AppOrdensRouteWithChildren
   '/app/pecas': typeof AppPecasRoute
   '/app/servicos': typeof AppServicosRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/app/colaboradores'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/financeiro'
     | '/app/ordens'
     | '/app/pecas'
     | '/app/servicos'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/app/colaboradores'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/financeiro'
     | '/app/ordens'
     | '/app/pecas'
     | '/app/servicos'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/app/colaboradores'
     | '/app/configuracoes'
     | '/app/dashboard'
+    | '/app/financeiro'
     | '/app/ordens'
     | '/app/pecas'
     | '/app/servicos'
@@ -280,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrdensRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/financeiro': {
+      id: '/app/financeiro'
+      path: '/financeiro'
+      fullPath: '/app/financeiro'
+      preLoaderRoute: typeof AppFinanceiroRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/dashboard': {
       id: '/app/dashboard'
       path: '/dashboard'
@@ -342,6 +361,7 @@ interface AppRouteChildren {
   AppColaboradoresRoute: typeof AppColaboradoresRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppFinanceiroRoute: typeof AppFinanceiroRoute
   AppOrdensRoute: typeof AppOrdensRouteWithChildren
   AppPecasRoute: typeof AppPecasRoute
   AppServicosRoute: typeof AppServicosRoute
@@ -354,6 +374,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppColaboradoresRoute: AppColaboradoresRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppFinanceiroRoute: AppFinanceiroRoute,
   AppOrdensRoute: AppOrdensRouteWithChildren,
   AppPecasRoute: AppPecasRoute,
   AppServicosRoute: AppServicosRoute,
