@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errors";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -89,16 +90,16 @@ function VehiclesPage() {
         if (error) throw error;
       }
     },
-    onSuccess: () => { toast.success("Salvo"); setOpen(false); qc.invalidateQueries({ queryKey: ["vehicles"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => { toast.success(t("common.saved")); setOpen(false); qc.invalidateQueries({ queryKey: ["vehicles"] }); },
+    onError: (e) => toast.error(traduzirErro(e)),
   });
 
   const remove = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("vehicles").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Excluído"); qc.invalidateQueries({ queryKey: ["vehicles"] }); },
+    onSuccess: () => { toast.success(t("common.deleted")); qc.invalidateQueries({ queryKey: ["vehicles"] }); },
   });
 
-  if (!activeUnitId) return <EmptyState title="Selecione uma unidade" />;
+  if (!activeUnitId) return <EmptyState title={t("common.selectUnit")} />;
 
   return (
     <div>
@@ -133,7 +134,7 @@ function VehiclesPage() {
                 <TableCell>{v.customers?.nome ?? "—"}</TableCell>
                 <TableCell className="flex justify-end gap-1">
                   <Button size="icon" variant="ghost" onClick={() => openEdit(v)}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir?")) remove.mutate(v.id); }}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => { if (confirm(t("common.confirmDelete"))) remove.mutate(v.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -148,7 +149,7 @@ function VehiclesPage() {
             <div className="col-span-2">
               <Label>{t("customer.title").slice(0, -1)}<span className="text-destructive"> *</span></Label>
               <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecionar cliente" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("common.selectCustomer")} /></SelectTrigger>
                 <SelectContent>
                   {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                 </SelectContent>

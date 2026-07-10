@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errors";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -49,8 +50,8 @@ function CustomersPage() {
         if (error) throw error;
       }
     },
-    onSuccess: () => { toast.success("Salvo"); setOpen(false); setEditing(null); qc.invalidateQueries({ queryKey: ["customers"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => { toast.success(t("common.saved")); setOpen(false); setEditing(null); qc.invalidateQueries({ queryKey: ["customers"] }); },
+    onError: (e) => toast.error(traduzirErro(e)),
   });
 
   const remove = useMutation({
@@ -58,8 +59,8 @@ function CustomersPage() {
       const { error } = await supabase.from("customers").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Excluído"); qc.invalidateQueries({ queryKey: ["customers"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => { toast.success(t("common.deleted")); qc.invalidateQueries({ queryKey: ["customers"] }); },
+    onError: (e) => toast.error(traduzirErro(e)),
   });
 
   const fields: Field[] = [
@@ -71,7 +72,7 @@ function CustomersPage() {
     { name: "observacoes", label: t("customer.notes"), type: "textarea", colSpan: 2 },
   ];
 
-  if (!activeUnitId) return <EmptyState title="Selecione uma unidade" />;
+  if (!activeUnitId) return <EmptyState title={t("common.selectUnit")} />;
 
   return (
     <div>
@@ -107,7 +108,7 @@ function CustomersPage() {
                 <TableCell>{c.email ?? "—"}</TableCell>
                 <TableCell className="flex justify-end gap-1">
                   <Button size="icon" variant="ghost" onClick={() => { setEditing(c); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir?")) remove.mutate(c.id); }}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => { if (confirm(t("common.confirmDelete"))) remove.mutate(c.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </TableCell>
               </TableRow>
             ))}

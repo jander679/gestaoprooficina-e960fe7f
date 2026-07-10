@@ -42,6 +42,15 @@ const resources = {
         address: "Endereço", createdAt: "Criado em", status: "Status", price: "Preço",
         quantity: "Qtd", total: "Total", description: "Descrição", type: "Tipo",
         yes: "Sim", no: "Não", none: "Nenhum",
+        saved: "Salvo com sucesso", deleted: "Excluído com sucesso",
+        confirmDelete: "Tem certeza que deseja excluir este registro?",
+        selectUnit: "Selecione uma unidade", selectCustomer: "Selecionar cliente",
+        all: "Todos", updated: "Atualizado com sucesso",
+      },
+      errors: {
+        generic: "Ocorreu um erro inesperado. Tente novamente.",
+        permission: "Você não tem permissão para realizar esta ação.",
+        session: "Sessão expirada. Faça login novamente.",
       },
       customer: { title: "Clientes", cpfCnpj: "CPF/CNPJ", notes: "Observações" },
       vehicle: { title: "Veículos", plate: "Placa", brand: "Marca", model: "Modelo", year: "Ano", color: "Cor", km: "KM", chassis: "Chassi" },
@@ -161,10 +170,11 @@ if (!i18n.isInitialized) {
     .use(initReactI18next)
     .init({
       resources,
+      lng: typeof window !== "undefined" ? (window.localStorage.getItem("i18nextLng") ?? "pt-BR") : "pt-BR",
       fallbackLng: "pt-BR",
       supportedLngs: ["pt-BR", "en"],
       interpolation: { escapeValue: false },
-      detection: { order: ["localStorage", "navigator"], caches: ["localStorage"] },
+      detection: { order: ["localStorage"], caches: ["localStorage"] },
     });
 }
 

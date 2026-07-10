@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Building2 } from "lucide-react";
+import { traduzirErro } from "@/lib/errors";
 
 export const Route = createFileRoute("/app/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações — OficinaPro" }] }),
@@ -48,24 +49,29 @@ function CompanySection() {
 
   const create = useMutation({
     mutationFn: async () => {
+      if (!user) throw new Error("Sessão expirada. Faça login novamente.");
       const { data: c, error } = await supabase.from("companies")
-        .insert({ cnpj: form.cnpj, razao_social: form.razao_social, nome_fantasia: form.nome_fantasia, criada_por: user!.id })
+        .insert({
+          cnpj: form.cnpj.trim(),
+          razao_social: form.razao_social.trim(),
+          nome_fantasia: form.nome_fantasia.trim() || null,
+          criada_por: user.id,
+        })
         .select().single();
       if (error) throw error;
-      const { data: u, error: uerr } = await supabase.from("units")
-        .insert({ company_id: c.id, nome: form.nome || "Matriz" }).select().single();
+      // O trigger no banco cria a membership do criador automaticamente.
+      const { error: uerr } = await supabase.from("units")
+        .insert({ company_id: c.id, nome: form.nome.trim() || "Matriz" });
       if (uerr) throw uerr;
-      const { error: merr } = await supabase.from("memberships")
-        .insert({ user_id: user!.id, unit_id: u.id, role: "oficina_admin" });
-      if (merr) throw merr;
     },
-    onSuccess: () => {
-      toast.success("Empresa criada!");
+    onSuccess: async () => {
+      toast.success("Empresa cadastrada com sucesso!");
       setOpen(false);
-      qc.invalidateQueries();
-      refetch();
+      setForm({ cnpj: "", razao_social: "", nome_fantasia: "", nome: "" });
+      await qc.invalidateQueries();
+      await refetch();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(traduzirErro(e)),
   });
 
   if (!companyId) {
@@ -79,13 +85,15 @@ function CompanySection() {
             <DialogContent>
               <DialogHeader><DialogTitle>Nova empresa</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div><Label>{t("settings.cnpj")}</Label><Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} /></div>
-                <div><Label>{t("settings.razaoSocial")}</Label><Input value={form.razao_social} onChange={(e) => setForm({ ...form, razao_social: e.target.value })} /></div>
+                <div><Label>{t("settings.cnpj")} <span className="text-destructive">*</span></Label><Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} /></div>
+                <div><Label>{t("settings.razaoSocial")} <span className="text-destructive">*</span></Label><Input value={form.razao_social} onChange={(e) => setForm({ ...form, razao_social: e.target.value })} /></div>
                 <div><Label>{t("settings.nomeFantasia")}</Label><Input value={form.nome_fantasia} onChange={(e) => setForm({ ...form, nome_fantasia: e.target.value })} /></div>
                 <div><Label>Nome da primeira unidade</Label><Input placeholder="Matriz" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
               </div>
               <DialogFooter>
-                <Button onClick={() => create.mutate()} disabled={!form.cnpj || !form.razao_social || create.isPending}>{t("common.save")}</Button>
+                <Button onClick={() => create.mutate()} disabled={!form.cnpj.trim() || !form.razao_social.trim() || create.isPending}>
+                  {create.isPending ? "Salvando..." : t("common.save")}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -111,7 +119,6 @@ function CompanySection() {
 
 function UnitsSection() {
   const { t } = useTranslation();
-  const { user } = useAuth();
   const { activeMembership, memberships, refetch } = useActiveUnit();
   const companyId = activeMembership?.units?.company_id;
   const qc = useQueryClient();
@@ -130,19 +137,18 @@ function UnitsSection() {
 
   const create = useMutation({
     mutationFn: async () => {
-      const { data: u, error } = await supabase.from("units").insert({ ...form, company_id: companyId! }).select().single();
+      const { error } = await supabase.from("units").insert({ ...form, company_id: companyId! });
       if (error) throw error;
-      // dá acesso ao criador (mesmo admin da company)
-      await supabase.from("memberships").insert({ user_id: user!.id, unit_id: u.id, role: "oficina_admin" });
+      // Trigger no banco cria automaticamente a membership do criador.
     },
-    onSuccess: () => {
-      toast.success("Unidade criada!");
+    onSuccess: async () => {
+      toast.success("Unidade cadastrada com sucesso!");
       setOpen(false);
       setForm({ nome: "", endereco: "", cidade: "", uf: "", cep: "", telefone: "" });
-      qc.invalidateQueries();
-      refetch();
+      await qc.invalidateQueries();
+      await refetch();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(traduzirErro(e)),
   });
 
   if (!companyId) return <p className="text-sm text-muted-foreground">Cadastre uma empresa primeiro.</p>;
@@ -155,14 +161,18 @@ function UnitsSection() {
           <DialogContent>
             <DialogHeader><DialogTitle>{t("settings.newUnit")}</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2"><Label>Nome</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+              <div className="col-span-2"><Label>Nome <span className="text-destructive">*</span></Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
               <div className="col-span-2"><Label>Endereço</Label><Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} /></div>
               <div><Label>Cidade</Label><Input value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} /></div>
               <div><Label>UF</Label><Input maxLength={2} value={form.uf} onChange={(e) => setForm({ ...form, uf: e.target.value.toUpperCase() })} /></div>
               <div><Label>CEP</Label><Input value={form.cep} onChange={(e) => setForm({ ...form, cep: e.target.value })} /></div>
               <div><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
             </div>
-            <DialogFooter><Button onClick={() => create.mutate()} disabled={!form.nome || create.isPending}>{t("common.save")}</Button></DialogFooter>
+            <DialogFooter>
+              <Button onClick={() => create.mutate()} disabled={!form.nome.trim() || create.isPending}>
+                {create.isPending ? "Salvando..." : t("common.save")}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

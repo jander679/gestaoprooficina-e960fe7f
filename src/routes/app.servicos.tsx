@@ -1,3 +1,4 @@
+import { traduzirErro } from "@/lib/errors";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -42,8 +43,8 @@ function ServicesPage() {
       if (editing) { const { error } = await supabase.from("services_catalog").update(payload).eq("id", editing.id); if (error) throw error; }
       else { const { error } = await supabase.from("services_catalog").insert({ ...payload, unit_id: activeUnitId! } as never); if (error) throw error; }
     },
-    onSuccess: () => { toast.success("Salvo"); setOpen(false); setEditing(null); qc.invalidateQueries({ queryKey: ["services"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => { toast.success(t("common.saved")); setOpen(false); setEditing(null); qc.invalidateQueries({ queryKey: ["services"] }); },
+    onError: (e) => toast.error(traduzirErro(e)),
   });
 
   const remove = useMutation({
@@ -58,7 +59,7 @@ function ServicesPage() {
     { name: "tempo_estimado_min", label: t("service.estimatedTime"), type: "number" },
   ];
 
-  if (!activeUnitId) return <EmptyState title="Selecione uma unidade" />;
+  if (!activeUnitId) return <EmptyState title={t("common.selectUnit")} />;
 
   return (
     <div>
@@ -80,7 +81,7 @@ function ServicesPage() {
                 <TableCell>{s.tempo_estimado_min ? `${s.tempo_estimado_min} min` : "—"}</TableCell>
                 <TableCell className="flex justify-end gap-1">
                   <Button size="icon" variant="ghost" onClick={() => { setEditing(s); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir?")) remove.mutate(s.id); }}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => { if (confirm(t("common.confirmDelete"))) remove.mutate(s.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </TableCell>
               </TableRow>
             ))}
