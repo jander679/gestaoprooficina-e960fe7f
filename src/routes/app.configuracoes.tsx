@@ -29,10 +29,59 @@ function SettingsPage() {
         <TabsList>
           <TabsTrigger value="company">{t("settings.company")}</TabsTrigger>
           <TabsTrigger value="units">{t("settings.units")}</TabsTrigger>
+          <TabsTrigger value="fipe">Base FIPE</TabsTrigger>
         </TabsList>
         <TabsContent value="company" className="mt-6"><CompanySection /></TabsContent>
         <TabsContent value="units" className="mt-6"><UnitsSection /></TabsContent>
+        <TabsContent value="fipe" className="mt-6"><FipeSection /></TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function FipeSection() {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [syncYears, setSyncYears] = useState(false);
+  const types: Array<{ id: "cars" | "motorcycles" | "trucks"; label: string }> = [
+    { id: "cars", label: "Carros" },
+    { id: "motorcycles", label: "Motos" },
+    { id: "trucks", label: "Caminhões" },
+  ];
+  async function sync(type: string) {
+    setBusy(type);
+    try {
+      const res = await fetch("/api/public/hooks/fipe-sync", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ type, sync_years: syncYears }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.ok) throw new Error(j.error ?? `HTTP ${res.status}`);
+      toast.success(`Sincronizado: ${j.brands} marcas, ${j.models} modelos${j.years ? `, ${j.years} anos` : ""}`);
+    } catch (e) {
+      toast.error(traduzirErro(e));
+    } finally { setBusy(null); }
+  }
+  return (
+    <div className="space-y-4 rounded-xl border bg-card p-6">
+      <div>
+        <div className="font-display text-lg font-semibold">Sincronizar base FIPE</div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Popula/atualiza marcas e modelos do catálogo brasileiro (Parallelum FIPE). Rode uma vez por tipo.
+          Ative "incluir anos" apenas se quiser a lista de anos por modelo (demora bem mais).
+        </p>
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={syncYears} onChange={(e) => setSyncYears(e.target.checked)} />
+        Incluir anos (lento)
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {types.map((tp) => (
+          <Button key={tp.id} variant="outline" disabled={busy !== null} onClick={() => sync(tp.id)}>
+            {busy === tp.id ? "Sincronizando..." : `Sincronizar ${tp.label}`}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 }
