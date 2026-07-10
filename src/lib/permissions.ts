@@ -7,7 +7,7 @@ export type Role =
   | "financeiro";
 
 export type Action =
-  // Módulos (mostra o item na sidebar / abre a página)
+  // Navegação
   | "nav.dashboard"
   | "nav.orders"
   | "nav.customers"
@@ -18,6 +18,8 @@ export type Action =
   | "nav.finance"
   | "nav.settings"
   | "nav.accounts"
+  | "nav.admin_oficinas"
+  | "nav.admin_financeiro"
   // Escrita
   | "customers:write"
   | "vehicles:write"
@@ -26,34 +28,52 @@ export type Action =
   | "staff:write"
   | "staff:invite"
   | "orders:write"
+  | "orders:reopen"
   | "orders:delete"
+  | "orders:print"
   | "payments:write"
   | "settings:write"
-  | "fipe:sync";
+  | "fipe:sync"
+  | "finance:edit"
+  | "history:read"
+  | "saas:finance";
 
 const MATRIX: Record<Action, Role[]> = {
+  // Navegação — super_admin só vê seus próprios módulos
   "nav.dashboard": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
   "nav.orders": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
   "nav.customers": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
   "nav.vehicles": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
   "nav.services": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
   "nav.parts": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
-  "nav.staff": ["oficina_admin", "recepcionista"],
+  "nav.staff": ["oficina_admin"],
   "nav.finance": ["oficina_admin", "financeiro"],
   "nav.settings": ["oficina_admin"],
   "nav.accounts": ["super_admin"],
+  "nav.admin_oficinas": ["super_admin"],
+  "nav.admin_financeiro": ["super_admin"],
 
+  // Recepcionista e mecânico podem cadastrar clientes/veículos/peças/serviços
   "customers:write": ["oficina_admin", "mecanico", "recepcionista"],
   "vehicles:write": ["oficina_admin", "mecanico", "recepcionista"],
-  "services:write": ["oficina_admin"],
-  "parts:write": ["oficina_admin", "mecanico"],
+  "services:write": ["oficina_admin", "mecanico", "recepcionista"],
+  "parts:write": ["oficina_admin", "mecanico", "recepcionista"],
+
   "staff:write": ["oficina_admin"],
-  "staff:invite": ["oficina_admin", "recepcionista"],
+  "staff:invite": ["oficina_admin"],
+
+  // OS: abrir/fechar/reabrir/imprimir
   "orders:write": ["oficina_admin", "mecanico", "recepcionista"],
+  "orders:reopen": ["oficina_admin", "mecanico", "recepcionista"],
   "orders:delete": ["oficina_admin"],
+  "orders:print": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
+
   "payments:write": ["oficina_admin", "financeiro", "recepcionista"],
   "settings:write": ["oficina_admin"],
-  "fipe:sync": ["oficina_admin", "super_admin"],
+  "fipe:sync": ["oficina_admin"],
+  "finance:edit": ["oficina_admin", "financeiro"],
+  "history:read": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
+  "saas:finance": ["super_admin"],
 };
 
 export function can(role: Role | null | undefined, action: Action, isSuperAdmin = false): boolean {

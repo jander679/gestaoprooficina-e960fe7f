@@ -97,6 +97,7 @@ function OrderDetail() {
   const paid = payments.reduce((s, p) => s + Number(p.valor), 0);
   const balance = total - paid;
 
+  const isClosed = os.status === "concluida" || os.status === "cancelada";
   return (
     <div>
       <PageHeader
@@ -105,6 +106,9 @@ function OrderDetail() {
           <>
             <Link to="/app/ordens"><Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" />{t("common.back")}</Button></Link>
             <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />{t("common.print")}</Button>
+            {isClosed && (
+              <Button variant="outline" onClick={() => changeStatus.mutate("aberta")}>Reabrir OS</Button>
+            )}
             <Select value={os.status} onValueChange={(v) => changeStatus.mutate(v)}>
               <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
               <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`os.status.${s}`)}</SelectItem>)}</SelectContent>
