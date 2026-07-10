@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveUnit } from "@/hooks/use-active-unit";
 import { useTheme } from "@/hooks/use-theme";
+import { can, type Role } from "@/lib/permissions";
 
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,8 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { theme, toggle } = useTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const role = (activeMembership?.role as import("@/lib/permissions").Role) ?? null;
-  const { can } = require("@/lib/permissions") as typeof import("@/lib/permissions");
+  const role = (activeMembership?.role as Role) ?? null;
 
   const allItems = [
     { to: "/app/dashboard", icon: LayoutDashboard, label: t("nav.dashboard"), action: "nav.dashboard" as const },
