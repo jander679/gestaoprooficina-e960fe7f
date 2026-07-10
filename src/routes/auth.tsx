@@ -101,8 +101,19 @@ function AuthPage() {
             </div>
           )}
           <div className="space-y-2">
-            <Label>{t("auth.email")}</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Label>{mode === "signup" ? t("auth.email") : "Usuário ou e-mail"}</Label>
+            <Input
+              type={mode === "signup" ? "email" : "text"}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete={mode === "signup" ? "email" : "username"}
+            />
+            {mode === "signin" && (
+              <p className="text-xs text-muted-foreground">
+                Colaboradores: use o nome de usuário criado pelo administrador da oficina.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>{t("auth.password")}</Label>
