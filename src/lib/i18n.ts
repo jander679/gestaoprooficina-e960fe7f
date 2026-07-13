@@ -138,7 +138,6 @@ if (!i18n.isInitialized) {
       lng: "pt-BR",
       fallbackLng: "pt-BR",
       supportedLngs: ["pt-BR"],
-      initImmediate: false,
       returnNull: false,
       returnEmptyString: false,
       interpolation: { escapeValue: false },
