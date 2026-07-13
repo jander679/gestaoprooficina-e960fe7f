@@ -57,7 +57,7 @@ function AppLayout() {
     }
   }, [loading, user, access, accessLoading, activeUnitLoading, isSuperAdmin, memberships.length, activeUnitId, nav]);
 
-  if (loading || !user) return null;
+  if (loading || !user || accessLoading || activeUnitLoading) return null;
 
   return (
     <AppShell>
