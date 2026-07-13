@@ -62,11 +62,12 @@ const MATRIX: Record<Action, Role[]> = {
   "staff:write": ["oficina_admin"],
   "staff:invite": ["oficina_admin"],
 
-  // OS: abrir/fechar/reabrir/imprimir
-  "orders:write": ["oficina_admin", "mecanico", "recepcionista"],
-  "orders:reopen": ["oficina_admin", "mecanico", "recepcionista"],
+  // OS: qualquer perfil da oficina pode criar/editar/reabrir/fechar/imprimir
+  "orders:write": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
+  "orders:reopen": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
   "orders:delete": ["oficina_admin"],
   "orders:print": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
+
 
   "payments:write": ["oficina_admin", "financeiro", "recepcionista"],
   "settings:write": ["oficina_admin"],
