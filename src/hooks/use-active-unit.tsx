@@ -55,7 +55,7 @@ export function ActiveUnitProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const { data: isSuperAdmin = false } = useQuery({
+  const { data: isSuperAdmin = false, isLoading: superAdminLoading } = useQuery({
     queryKey: ["isSuperAdmin", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -67,6 +67,13 @@ export function ActiveUnitProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
 
   useEffect(() => {
+    if (isSuperAdmin) {
+      if (activeUnitId) {
+        setActive(null);
+        localStorage.removeItem(KEY);
+      }
+      return;
+    }
     if (!memberships.length) return;
     // Auto-seleciona só quando há uma única oficina; com várias, o usuário escolhe.
     if (memberships.length === 1) {
@@ -81,7 +88,7 @@ export function ActiveUnitProvider({ children }: { children: ReactNode }) {
       setActive(null);
       localStorage.removeItem(KEY);
     }
-  }, [memberships, activeUnitId]);
+  }, [memberships, activeUnitId, isSuperAdmin]);
 
   const setActiveUnitId = (id: string) => {
     setActive(id);
@@ -96,7 +103,7 @@ export function ActiveUnitProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <C.Provider value={{ memberships, activeUnitId, setActiveUnitId, activeMembership, isLoading, refetch, isSuperAdmin }}>
+    <C.Provider value={{ memberships, activeUnitId, setActiveUnitId, activeMembership, isLoading: isLoading || superAdminLoading, refetch, isSuperAdmin }}>
       {children}
     </C.Provider>
   );

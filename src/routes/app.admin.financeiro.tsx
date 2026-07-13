@@ -16,7 +16,7 @@ import { traduzirErro } from "@/lib/errors";
 import { Download, RefreshCw, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/app/admin/financeiro")({
-  head: () => ({ meta: [{ title: "Admin Geral — Financeiro SaaS" }] }),
+  head: () => ({ meta: [{ title: "Admin Geral — Financeiro do Sistema" }] }),
   component: AdminSaasFinancePage,
 });
 
@@ -100,7 +100,7 @@ function AdminSaasFinancePage() {
 
   return (
     <div>
-      <PageHeader title="Financeiro do Sistema (SaaS)" subtitle="Mensalidades cobradas de cada unidade cadastrada."
+      <PageHeader title="Financeiro do Sistema" subtitle="Mensalidades cobradas de cada unidade cadastrada."
         actions={
           <>
             <Button variant="outline" onClick={() => mGen.mutate()} disabled={mGen.isPending}>

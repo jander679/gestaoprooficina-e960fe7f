@@ -12,7 +12,7 @@ export const Route = createFileRoute("/app")({
 
 function AppLayout() {
   const { user, loading } = useAuth();
-  const { isSuperAdmin, memberships, activeUnitId } = useActiveUnit();
+  const { isSuperAdmin, memberships, activeUnitId, isLoading: activeUnitLoading } = useActiveUnit();
   const nav = useNavigate();
 
   const { data: access, isLoading: accessLoading } = useQuery({
@@ -27,9 +27,14 @@ function AppLayout() {
   useEffect(() => {
     if (loading) return;
     if (!user) { nav({ to: "/auth" }); return; }
-    if (accessLoading) return;
+    if (accessLoading || activeUnitLoading) return;
     if (isSuperAdmin) {
-      if (typeof window !== "undefined" && window.location.pathname === "/app") {
+      if (typeof window !== "undefined") {
+        const p = window.location.pathname;
+        if (p === "/app" || p === "/app/" || !p.startsWith("/app/admin")) {
+          nav({ to: "/app/admin/contas" });
+        }
+      } else {
         nav({ to: "/app/admin/contas" });
       }
       return;
@@ -50,7 +55,7 @@ function AppLayout() {
         nav({ to: "/app/selecionar-unidade" });
       }
     }
-  }, [loading, user, access, accessLoading, isSuperAdmin, memberships.length, activeUnitId, nav]);
+  }, [loading, user, access, accessLoading, activeUnitLoading, isSuperAdmin, memberships.length, activeUnitId, nav]);
 
   if (loading || !user) return null;
 
