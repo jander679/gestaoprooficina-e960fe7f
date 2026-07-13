@@ -127,6 +127,10 @@ const resources = {
 };
 
 if (!i18n.isInitialized) {
+  if (typeof window !== "undefined") {
+    try { window.localStorage.removeItem("i18nextLng"); } catch { /* ignore */ }
+    try { document.documentElement.lang = "pt-BR"; } catch { /* ignore */ }
+  }
   i18n
     .use(initReactI18next)
     .init({
@@ -135,7 +139,9 @@ if (!i18n.isInitialized) {
       fallbackLng: "pt-BR",
       supportedLngs: ["pt-BR"],
       interpolation: { escapeValue: false },
+      detection: undefined,
     });
 }
 
 export default i18n;
+

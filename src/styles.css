@@ -143,3 +143,12 @@
   body { background-color: var(--color-background); color: var(--color-foreground); }
   h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
 }
+
+@media print {
+  aside, header, .no-print { display: none !important; }
+  main { padding: 0 !important; overflow: visible !important; }
+  html, body { background: white !important; color: black !important; }
+  .print-page { max-width: 100% !important; box-shadow: none !important; border: 0 !important; }
+  @page { size: A4; margin: 12mm; }
+}
+
