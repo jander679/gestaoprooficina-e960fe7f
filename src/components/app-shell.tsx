@@ -1,5 +1,4 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import {
   Wrench, LayoutDashboard, Users, Car, Package, ClipboardList,
@@ -20,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { t } = useTranslation();
   const nav = useNavigate();
   const { user } = useAuth();
   const { memberships, activeUnitId, setActiveUnitId, activeMembership, isSuperAdmin } = useActiveUnit();
@@ -28,18 +26,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const role = (activeMembership?.role as Role) ?? null;
+  const roleLabel: Record<string, string> = {
+    oficina_admin: "Administrador da Oficina",
+    mecanico: "Mecânico",
+    recepcionista: "Recepcionista",
+    financeiro: "Financeiro",
+  };
 
   const allItems = [
-    { to: "/app/dashboard", icon: LayoutDashboard, label: t("nav.dashboard"), action: "nav.dashboard" as const },
-    { to: "/app/ordens", icon: ClipboardList, label: t("nav.orders"), action: "nav.orders" as const },
-    { to: "/app/clientes", icon: Users, label: t("nav.customers"), action: "nav.customers" as const },
-    { to: "/app/veiculos", icon: Car, label: t("nav.vehicles"), action: "nav.vehicles" as const },
-    { to: "/app/servicos", icon: Wrench, label: t("nav.services"), action: "nav.services" as const },
-    { to: "/app/pecas", icon: Package, label: t("nav.parts"), action: "nav.parts" as const },
-    { to: "/app/colaboradores", icon: UserCog, label: t("nav.staff"), action: "nav.staff" as const },
-    { to: "/app/financeiro", icon: Wallet, label: t("nav.finance"), action: "nav.finance" as const },
+    { to: "/app/dashboard", icon: LayoutDashboard, label: "Painel", action: "nav.dashboard" as const },
+    { to: "/app/ordens", icon: ClipboardList, label: "Ordens de Serviço", action: "nav.orders" as const },
+    { to: "/app/clientes", icon: Users, label: "Clientes", action: "nav.customers" as const },
+    { to: "/app/veiculos", icon: Car, label: "Veículos", action: "nav.vehicles" as const },
+    { to: "/app/servicos", icon: Wrench, label: "Serviços", action: "nav.services" as const },
+    { to: "/app/pecas", icon: Package, label: "Peças", action: "nav.parts" as const },
+    { to: "/app/colaboradores", icon: UserCog, label: "Colaboradores", action: "nav.staff" as const },
+    { to: "/app/financeiro", icon: Wallet, label: "Financeiro", action: "nav.finance" as const },
     { to: "/app/financeiro/contas-pagar", icon: Receipt, label: "Contas a Pagar", action: "nav.finance" as const },
-    { to: "/app/configuracoes", icon: Settings, label: t("nav.settings"), action: "nav.settings" as const },
+    { to: "/app/configuracoes", icon: Settings, label: "Configurações", action: "nav.settings" as const },
   ];
   const onboarding = !isSuperAdmin && memberships.length === 0;
   const items = isSuperAdmin
@@ -50,8 +54,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const superItems = isSuperAdmin ? [
     { to: "/app/admin/contas", icon: ShieldCheck, label: "Contas de usuários" },
-    { to: "/app/admin/oficinas", icon: Building2, label: "Oficinas & Colaboradores" },
-    { to: "/app/admin/financeiro", icon: DollarSign, label: "Financeiro do SaaS" },
+    { to: "/app/admin/oficinas", icon: Building2, label: "Oficinas e Colaboradores" },
+    { to: "/app/admin/financeiro", icon: DollarSign, label: "Financeiro do Sistema" },
   ] : [];
 
   async function signOut() {
@@ -66,7 +70,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
             <Wrench className="h-4 w-4" />
           </div>
-          <span className="font-display text-base font-semibold">{t("app.name")}</span>
+          <span className="font-display text-base font-semibold">OficinaPro</span>
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-2 text-sm">
           {items.map((i) => {
@@ -84,7 +88,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {isSuperAdmin && (
             <>
               <div className="mt-4 px-3 pt-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {t("nav.superAdmin")}
+                ADMINISTRADOR GERAL
               </div>
               {superItems.map((i) => {
                 const active = pathname.startsWith(i.to);
@@ -133,7 +137,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
             {activeMembership && !isSuperAdmin && (
               <span className="hidden rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground md:inline">
-                {t(`staff.roles.${activeMembership.role}`, activeMembership.role)}
+                {roleLabel[activeMembership.role] ?? activeMembership.role}
               </span>
             )}
             {memberships.length > 1 && !isSuperAdmin && (
@@ -161,7 +165,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  {t("auth.signOut")}
+                  Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

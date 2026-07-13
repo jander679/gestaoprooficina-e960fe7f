@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -20,7 +19,6 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { t } = useTranslation();
   const nav = useNavigate();
   const { user, loading } = useAuth();
   const { mode: initialMode } = Route.useSearch();
@@ -82,26 +80,26 @@ function AuthPage() {
           <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
             <Wrench className="h-4 w-4" />
           </div>
-          <span className="font-display text-lg font-semibold">{t("app.name")}</span>
+          <span className="font-display text-lg font-semibold">OficinaPro</span>
         </Link>
 
         <h1 className="font-display text-2xl font-semibold">
-          {mode === "signup" ? t("auth.signUp") : t("auth.signIn")}
+          {mode === "signup" ? "Criar conta" : "Entrar"}
         </h1>
 
         {mode === "signup" && (
-          <p className="mt-2 text-xs text-muted-foreground">{t("auth.signupHint")}</p>
+          <p className="mt-2 text-xs text-muted-foreground">Ao se cadastrar, sua conta ficará pendente de aprovação pelo Administrador Geral do Sistema.</p>
         )}
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           {mode === "signup" && (
             <div className="space-y-2">
-              <Label>{t("auth.fullName")}</Label>
+              <Label>Nome completo</Label>
               <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
             </div>
           )}
           <div className="space-y-2">
-            <Label>{mode === "signup" ? t("auth.email") : "Usuário ou e-mail"}</Label>
+            <Label>{mode === "signup" ? "E-mail" : "Usuário ou e-mail"}</Label>
             <Input
               type={mode === "signup" ? "email" : "text"}
               value={email}
@@ -116,11 +114,11 @@ function AuthPage() {
             )}
           </div>
           <div className="space-y-2">
-            <Label>{t("auth.password")}</Label>
+            <Label>Senha</Label>
             <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
           </div>
           <Button type="submit" className="w-full" disabled={submitting}>
-            {mode === "signup" ? t("auth.signUp") : t("auth.signIn")}
+            {mode === "signup" ? "Criar conta" : "Entrar"}
           </Button>
         </form>
 
@@ -129,7 +127,7 @@ function AuthPage() {
         </div>
 
         <Button variant="outline" className="w-full" onClick={onGoogle}>
-          {t("auth.continueWithGoogle")}
+          Continuar com Google
         </Button>
 
         <button
@@ -137,9 +135,9 @@ function AuthPage() {
           className="mt-6 w-full text-sm text-muted-foreground hover:text-foreground"
           onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
         >
-          {mode === "signup" ? t("auth.haveAccount") : t("auth.noAccount")}{" "}
+          {mode === "signup" ? "Já tem conta?" : "Não tem conta?"}{" "}
           <span className="font-medium text-primary">
-            {mode === "signup" ? t("auth.signIn") : t("auth.signUp")}
+            {mode === "signup" ? "Entrar" : "Criar conta"}
           </span>
         </button>
       </div>
