@@ -81,12 +81,13 @@ function OrderDetail() {
 
   const changeStatus = useMutation({
     mutationFn: async (status: string) => {
-      const payload: Record<string, unknown> = { status: status as never };
+      const payload: { status: string; data_conclusao?: string | null } = { status };
       if (status === "concluida") payload.data_conclusao = new Date().toISOString();
       if (status === "aberta" || status === "em_andamento") payload.data_conclusao = null;
-      const { error } = await supabase.from("service_orders").update(payload).eq("id", id);
+      const { error } = await supabase.from("service_orders").update(payload as never).eq("id", id);
       if (error) throw error;
     },
+
     onSuccess: () => { toast.success(t("common.updated")); qc.invalidateQueries({ queryKey: ["os", id] }); qc.invalidateQueries({ queryKey: ["orders"] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });

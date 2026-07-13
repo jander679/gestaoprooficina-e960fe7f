@@ -114,15 +114,19 @@ function OrdersPage() {
       const { data: nres, error: nerr } = await supabase.rpc("next_os_number", { _unit: activeUnitId! });
       if (nerr) throw nerr;
 
-      const insertPayload: Record<string, unknown> = {
-        unit_id: activeUnitId!, numero: nres as number, customer_id: selCustomer,
-        vehicle_id: selVehicle || null, status: "aberta",
+      const insertPayload = {
+        unit_id: activeUnitId!,
+        numero: nres as number,
+        customer_id: selCustomer,
+        vehicle_id: selVehicle || null,
+        status: "aberta" as const,
         mecanico_id: selMecanico || null,
         km_entrada: kmEntrada ? Number(kmEntrada) : null,
         observacoes_internas: observacoes || null,
       };
 
       const { data: os, error } = await supabase.from("service_orders").insert(insertPayload).select("id").single();
+
       if (error) throw error;
 
       // Item inicial (opcional)
