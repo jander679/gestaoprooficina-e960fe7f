@@ -30,7 +30,7 @@ function PrintOs() {
     queryKey: ["os-print", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("service_orders")
-        .select("*, customers(nome,cpf_cnpj,telefone,email,endereco), vehicles(placa,marca,modelo,ano,cor,chassi,km), units(nome,endereco,telefone,companies(razao_social,nome_fantasia,cnpj))")
+        .select("*, customers(nome,cpf_cnpj,telefone,email,endereco), vehicles(placa,marca,modelo,ano,cor,chassi), units(nome,endereco,telefone,companies(razao_social,nome_fantasia,cnpj))")
         .eq("id", id).single();
       if (error) throw error;
       return data;

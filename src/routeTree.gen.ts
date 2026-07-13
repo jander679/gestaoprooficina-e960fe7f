@@ -29,6 +29,7 @@ import { Route as AppFinanceiroContasPagarRouteImport } from './routes/app.finan
 import { Route as AppAdminOficinasRouteImport } from './routes/app.admin.oficinas'
 import { Route as AppAdminFinanceiroRouteImport } from './routes/app.admin.financeiro'
 import { Route as AppAdminContasRouteImport } from './routes/app.admin.contas'
+import { Route as AppOrdensIdImprimirRouteImport } from './routes/app.ordens.$id.imprimir'
 import { Route as ApiPublicHooksFipeSyncRouteImport } from './routes/api/public/hooks/fipe-sync'
 
 const PendenteRoute = PendenteRouteImport.update({
@@ -132,6 +133,11 @@ const AppAdminContasRoute = AppAdminContasRouteImport.update({
   path: '/admin/contas',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOrdensIdImprimirRoute = AppOrdensIdImprimirRouteImport.update({
+  id: '/imprimir',
+  path: '/imprimir',
+  getParentRoute: () => AppOrdensIdRoute,
+} as any)
 const ApiPublicHooksFipeSyncRoute = ApiPublicHooksFipeSyncRouteImport.update({
   id: '/api/public/hooks/fipe-sync',
   path: '/api/public/hooks/fipe-sync',
@@ -158,8 +164,9 @@ export interface FileRoutesByFullPath {
   '/app/admin/financeiro': typeof AppAdminFinanceiroRoute
   '/app/admin/oficinas': typeof AppAdminOficinasRoute
   '/app/financeiro/contas-pagar': typeof AppFinanceiroContasPagarRoute
-  '/app/ordens/$id': typeof AppOrdensIdRoute
+  '/app/ordens/$id': typeof AppOrdensIdRouteWithChildren
   '/api/public/hooks/fipe-sync': typeof ApiPublicHooksFipeSyncRoute
+  '/app/ordens/$id/imprimir': typeof AppOrdensIdImprimirRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -181,8 +188,9 @@ export interface FileRoutesByTo {
   '/app/admin/financeiro': typeof AppAdminFinanceiroRoute
   '/app/admin/oficinas': typeof AppAdminOficinasRoute
   '/app/financeiro/contas-pagar': typeof AppFinanceiroContasPagarRoute
-  '/app/ordens/$id': typeof AppOrdensIdRoute
+  '/app/ordens/$id': typeof AppOrdensIdRouteWithChildren
   '/api/public/hooks/fipe-sync': typeof ApiPublicHooksFipeSyncRoute
+  '/app/ordens/$id/imprimir': typeof AppOrdensIdImprimirRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -205,8 +213,9 @@ export interface FileRoutesById {
   '/app/admin/financeiro': typeof AppAdminFinanceiroRoute
   '/app/admin/oficinas': typeof AppAdminOficinasRoute
   '/app/financeiro/contas-pagar': typeof AppFinanceiroContasPagarRoute
-  '/app/ordens/$id': typeof AppOrdensIdRoute
+  '/app/ordens/$id': typeof AppOrdensIdRouteWithChildren
   '/api/public/hooks/fipe-sync': typeof ApiPublicHooksFipeSyncRoute
+  '/app/ordens/$id/imprimir': typeof AppOrdensIdImprimirRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/app/financeiro/contas-pagar'
     | '/app/ordens/$id'
     | '/api/public/hooks/fipe-sync'
+    | '/app/ordens/$id/imprimir'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/app/financeiro/contas-pagar'
     | '/app/ordens/$id'
     | '/api/public/hooks/fipe-sync'
+    | '/app/ordens/$id/imprimir'
   id:
     | '__root__'
     | '/'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/app/financeiro/contas-pagar'
     | '/app/ordens/$id'
     | '/api/public/hooks/fipe-sync'
+    | '/app/ordens/$id/imprimir'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -431,6 +443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminContasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/ordens/$id/imprimir': {
+      id: '/app/ordens/$id/imprimir'
+      path: '/imprimir'
+      fullPath: '/app/ordens/$id/imprimir'
+      preLoaderRoute: typeof AppOrdensIdImprimirRouteImport
+      parentRoute: typeof AppOrdensIdRoute
+    }
     '/api/public/hooks/fipe-sync': {
       id: '/api/public/hooks/fipe-sync'
       path: '/api/public/hooks/fipe-sync'
@@ -453,12 +472,24 @@ const AppFinanceiroRouteWithChildren = AppFinanceiroRoute._addFileChildren(
   AppFinanceiroRouteChildren,
 )
 
+interface AppOrdensIdRouteChildren {
+  AppOrdensIdImprimirRoute: typeof AppOrdensIdImprimirRoute
+}
+
+const AppOrdensIdRouteChildren: AppOrdensIdRouteChildren = {
+  AppOrdensIdImprimirRoute: AppOrdensIdImprimirRoute,
+}
+
+const AppOrdensIdRouteWithChildren = AppOrdensIdRoute._addFileChildren(
+  AppOrdensIdRouteChildren,
+)
+
 interface AppOrdensRouteChildren {
-  AppOrdensIdRoute: typeof AppOrdensIdRoute
+  AppOrdensIdRoute: typeof AppOrdensIdRouteWithChildren
 }
 
 const AppOrdensRouteChildren: AppOrdensRouteChildren = {
-  AppOrdensIdRoute: AppOrdensIdRoute,
+  AppOrdensIdRoute: AppOrdensIdRouteWithChildren,
 }
 
 const AppOrdensRouteWithChildren = AppOrdensRoute._addFileChildren(
