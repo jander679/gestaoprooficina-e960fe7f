@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Trash2, ArrowLeft, Printer } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Printer, FileDown, Save } from "lucide-react";
 import { traduzirErro } from "@/lib/errors";
 import { brl, fmtDateTime } from "@/lib/format";
 
@@ -68,9 +68,23 @@ function OrderDetail() {
     },
   });
 
+  const { data: mecanicos = [] } = useQuery({
+    queryKey: ["mecanicos-select-os", os?.unit_id],
+    enabled: !!os?.unit_id,
+    queryFn: async () => {
+      const { data } = await supabase.from("memberships")
+        .select("user_id, role, ativo, profiles!inner(full_name, username)")
+        .eq("unit_id", os!.unit_id).eq("ativo", true);
+      return (data ?? []) as unknown as Array<{ user_id: string; role: string; profiles: { full_name: string | null; username: string | null } }>;
+    },
+  });
+
   const changeStatus = useMutation({
     mutationFn: async (status: string) => {
-      const { error } = await supabase.from("service_orders").update({ status: status as never }).eq("id", id);
+      const payload: Record<string, unknown> = { status: status as never };
+      if (status === "concluida") payload.data_conclusao = new Date().toISOString();
+      if (status === "aberta" || status === "em_andamento") payload.data_conclusao = null;
+      const { error } = await supabase.from("service_orders").update(payload).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success(t("common.updated")); qc.invalidateQueries({ queryKey: ["os", id] }); qc.invalidateQueries({ queryKey: ["orders"] }); },
@@ -98,6 +112,11 @@ function OrderDetail() {
   const balance = total - paid;
 
   const isClosed = os.status === "concluida" || os.status === "cancelada";
+
+  function printPdf() {
+    window.open(`/app/ordens/${id}/imprimir?auto=1`, "_blank");
+  }
+
   return (
     <div>
       <PageHeader
@@ -105,7 +124,8 @@ function OrderDetail() {
         actions={
           <>
             <Link to="/app/ordens"><Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" />{t("common.back")}</Button></Link>
-            <Button variant="outline" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />{t("common.print")}</Button>
+            <Button variant="outline" onClick={printPdf}><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
+            <Button variant="outline" onClick={printPdf}><FileDown className="mr-2 h-4 w-4" />Baixar PDF</Button>
             {isClosed && (
               <Button variant="outline" onClick={() => changeStatus.mutate("aberta")}>Reabrir OS</Button>
             )}
@@ -134,6 +154,16 @@ function OrderDetail() {
           <Badge className="mt-1" variant="secondary">{t(`os.status.${os.status}`)}</Badge>
         </div>
       </div>
+
+      <OsEditableFields
+        osId={id}
+        mecanicoId={os.mecanico_id}
+        kmEntrada={os.km_entrada}
+        diagnostico={os.diagnostico}
+        observacoesCliente={os.observacoes_cliente}
+        observacoesInternas={os.observacoes_internas}
+        mecanicos={mecanicos}
+      />
 
       <div className="mt-6 rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
@@ -197,16 +227,90 @@ function OrderDetail() {
         </Table>
       </div>
 
-      {os.diagnostico || os.observacoes_cliente || os.observacoes_internas ? (
-        <div className="mt-6 space-y-2 rounded-xl border bg-card p-4 text-sm">
-          {os.diagnostico && <div><span className="font-medium">{t("os.diagnosis")}: </span>{os.diagnostico}</div>}
-          {os.observacoes_cliente && <div><span className="font-medium">{t("os.customerNotes")}: </span>{os.observacoes_cliente}</div>}
-          {os.observacoes_internas && <div><span className="font-medium">{t("os.internalNotes")}: </span>{os.observacoes_internas}</div>}
-        </div>
-      ) : null}
-
       {itemOpen && <ItemDialog osId={id} unitId={os.unit_id} onClose={() => setItemOpen(false)} />}
       {payOpen && <PaymentDialog osId={id} unitId={os.unit_id} onClose={() => setPayOpen(false)} suggested={balance > 0 ? balance : total} />}
+    </div>
+  );
+}
+
+function OsEditableFields({
+  osId, mecanicoId, kmEntrada, diagnostico, observacoesCliente, observacoesInternas, mecanicos,
+}: {
+  osId: string;
+  mecanicoId: string | null;
+  kmEntrada: number | null;
+  diagnostico: string | null;
+  observacoesCliente: string | null;
+  observacoesInternas: string | null;
+  mecanicos: Array<{ user_id: string; role: string; profiles: { full_name: string | null; username: string | null } }>;
+}) {
+  const qc = useQueryClient();
+  const [mec, setMec] = useState(mecanicoId ?? "");
+  const [km, setKm] = useState(kmEntrada != null ? String(kmEntrada) : "");
+  const [diag, setDiag] = useState(diagnostico ?? "");
+  const [obsC, setObsC] = useState(observacoesCliente ?? "");
+  const [obsI, setObsI] = useState(observacoesInternas ?? "");
+
+  useEffect(() => {
+    setMec(mecanicoId ?? ""); setKm(kmEntrada != null ? String(kmEntrada) : "");
+    setDiag(diagnostico ?? ""); setObsC(observacoesCliente ?? ""); setObsI(observacoesInternas ?? "");
+  }, [mecanicoId, kmEntrada, diagnostico, observacoesCliente, observacoesInternas]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("service_orders").update({
+        mecanico_id: mec || null,
+        km_entrada: km ? Number(km) : null,
+        diagnostico: diag || null,
+        observacoes_cliente: obsC || null,
+        observacoes_internas: obsI || null,
+      }).eq("id", osId);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Atualizado"); qc.invalidateQueries({ queryKey: ["os", osId] }); },
+    onError: (e) => toast.error(traduzirErro(e)),
+  });
+
+  return (
+    <div className="mt-6 rounded-xl border bg-card p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="font-medium">Dados da OS</div>
+        <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
+          <Save className="mr-1 h-4 w-4" />Salvar alterações
+        </Button>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <Label>Mecânico responsável</Label>
+          <Select value={mec || "none"} onValueChange={(v) => setMec(v === "none" ? "" : v)}>
+            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— Nenhum —</SelectItem>
+              {mecanicos.map((m) => (
+                <SelectItem key={m.user_id} value={m.user_id}>
+                  {m.profiles.full_name || m.profiles.username || "—"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>KM na entrada</Label>
+          <Input type="number" value={km} onChange={(e) => setKm(e.target.value)} />
+        </div>
+        <div className="md:col-span-2">
+          <Label>Diagnóstico</Label>
+          <Textarea rows={3} value={diag} onChange={(e) => setDiag(e.target.value)} />
+        </div>
+        <div>
+          <Label>Observações ao cliente</Label>
+          <Textarea rows={4} value={obsC} onChange={(e) => setObsC(e.target.value)} />
+        </div>
+        <div>
+          <Label>Observações internas</Label>
+          <Textarea rows={4} value={obsI} onChange={(e) => setObsI(e.target.value)} />
+        </div>
+      </div>
     </div>
   );
 }
