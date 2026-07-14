@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, Pencil, Trash2 } from "lucide-react";
 import { traduzirErro } from "@/lib/errors";
 
 export const Route = createFileRoute("/app/configuracoes")({
