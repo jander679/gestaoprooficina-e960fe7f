@@ -110,6 +110,7 @@ export type Database = {
       contas_pagar: {
         Row: {
           categoria: string | null
+          conta_mae_id: string | null
           created_at: string
           created_by: string | null
           descricao: string
@@ -118,6 +119,9 @@ export type Database = {
           metodo: string | null
           observacao: string | null
           pago_em: string | null
+          recorrencia_ate: string | null
+          recorrencia_dia_mes: number | null
+          recorrente: boolean
           status: string
           unit_id: string
           updated_at: string
@@ -126,6 +130,7 @@ export type Database = {
         }
         Insert: {
           categoria?: string | null
+          conta_mae_id?: string | null
           created_at?: string
           created_by?: string | null
           descricao: string
@@ -134,6 +139,9 @@ export type Database = {
           metodo?: string | null
           observacao?: string | null
           pago_em?: string | null
+          recorrencia_ate?: string | null
+          recorrencia_dia_mes?: number | null
+          recorrente?: boolean
           status?: string
           unit_id: string
           updated_at?: string
@@ -142,6 +150,7 @@ export type Database = {
         }
         Update: {
           categoria?: string | null
+          conta_mae_id?: string | null
           created_at?: string
           created_by?: string | null
           descricao?: string
@@ -150,6 +159,9 @@ export type Database = {
           metodo?: string | null
           observacao?: string | null
           pago_em?: string | null
+          recorrencia_ate?: string | null
+          recorrencia_dia_mes?: number | null
+          recorrente?: boolean
           status?: string
           unit_id?: string
           updated_at?: string
@@ -157,6 +169,13 @@ export type Database = {
           vencimento?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contas_pagar_conta_mae_id_fkey"
+            columns: ["conta_mae_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contas_pagar_unit_id_fkey"
             columns: ["unit_id"]
@@ -876,6 +895,8 @@ export type Database = {
           data_abertura: string
           data_conclusao: string | null
           diagnostico: string | null
+          fechada_com_saldo: boolean
+          fechada_por: string | null
           id: string
           km_entrada: number | null
           mecanico_id: string | null
@@ -895,6 +916,8 @@ export type Database = {
           data_abertura?: string
           data_conclusao?: string | null
           diagnostico?: string | null
+          fechada_com_saldo?: boolean
+          fechada_por?: string | null
           id?: string
           km_entrada?: number | null
           mecanico_id?: string | null
@@ -914,6 +937,8 @@ export type Database = {
           data_abertura?: string
           data_conclusao?: string | null
           diagnostico?: string | null
+          fechada_com_saldo?: boolean
+          fechada_por?: string | null
           id?: string
           km_entrada?: number | null
           mecanico_id?: string | null
