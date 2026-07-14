@@ -353,7 +353,7 @@ function OsEditableFields({
   );
 }
 
-function ItemDialog({ osId, unitId, onClose }: { osId: string; unitId: string; onClose: () => void }) {
+function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId: string; osStatus: string; onClose: () => void }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [tipo, setTipo] = useState<ItemType>("servico");
