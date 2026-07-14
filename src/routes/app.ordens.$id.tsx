@@ -81,14 +81,31 @@ function OrderDetail() {
 
   const changeStatus = useMutation({
     mutationFn: async (status: string) => {
-      const payload: { status: string; data_conclusao?: string | null } = { status };
-      if (status === "concluida") payload.data_conclusao = new Date().toISOString();
-      if (status === "aberta" || status === "em_andamento") payload.data_conclusao = null;
+      const payload: { status: string; data_conclusao?: string | null; fechada_por?: string | null; fechada_com_saldo?: boolean } = { status };
+      if (status === "concluida") {
+        payload.data_conclusao = new Date().toISOString();
+        const { data: u } = await supabase.auth.getUser();
+        payload.fechada_por = u.user?.id ?? null;
+        payload.fechada_com_saldo = balance > 0;
+      }
+      if (status === "aberta" || status === "em_andamento") {
+        payload.data_conclusao = null;
+        payload.fechada_por = null;
+        payload.fechada_com_saldo = false;
+      }
       const { error } = await supabase.from("service_orders").update(payload as never).eq("id", id);
       if (error) throw error;
     },
 
-    onSuccess: () => { toast.success(t("common.updated")); qc.invalidateQueries({ queryKey: ["os", id] }); qc.invalidateQueries({ queryKey: ["orders"] }); },
+    onSuccess: (_d, status) => {
+      const label: Record<string, string> = {
+        aberta: "OS reaberta", em_andamento: "OS em andamento", aguardando_peca: "Aguardando peça",
+        aguardando_aprovacao: "Aguardando aprovação", concluida: "OS fechada", cancelada: "OS cancelada",
+      };
+      toast.success(label[status] ?? "Status atualizado");
+      qc.invalidateQueries({ queryKey: ["os", id] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
@@ -118,6 +135,14 @@ function OrderDetail() {
     window.open(`/app/ordens/${id}/imprimir?auto=1`, "_blank");
   }
 
+  function fecharOS() {
+    if (balance > 0) {
+      const ok = confirm(`Existe um saldo em aberto de ${brl(balance)}. Deseja fechar a OS mesmo assim? Ela será marcada como concluída com saldo pendente.`);
+      if (!ok) return;
+    }
+    changeStatus.mutate("concluida");
+  }
+
   return (
     <div>
       <PageHeader
@@ -126,9 +151,14 @@ function OrderDetail() {
           <>
             <Link to="/app/ordens"><Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" />{t("common.back")}</Button></Link>
             <Button variant="outline" onClick={printPdf}><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
-            <Button variant="outline" onClick={printPdf}><FileDown className="mr-2 h-4 w-4" />Baixar PDF</Button>
-            {isClosed && (
-              <Button variant="outline" onClick={() => changeStatus.mutate("aberta")}>Reabrir OS</Button>
+            <Button variant="outline" onClick={printPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>
+            {!isClosed && os.status !== "em_andamento" && (
+              <Button variant="secondary" onClick={() => changeStatus.mutate("em_andamento")}>Iniciar</Button>
+            )}
+            {isClosed ? (
+              <Button variant="default" onClick={() => changeStatus.mutate("em_andamento")}>Reabrir OS</Button>
+            ) : (
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={fecharOS}>Fechar OS</Button>
             )}
             <Select value={os.status} onValueChange={(v) => changeStatus.mutate(v)}>
               <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
@@ -137,6 +167,13 @@ function OrderDetail() {
           </>
         }
       />
+
+      {isClosed && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+          OS {os.status === "concluida" ? "concluída" : "cancelada"}. Você ainda pode editar dados, adicionar itens ou pagamentos — a OS volta a ficar em andamento automaticamente.
+        </div>
+      )}
+
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-card p-4">
