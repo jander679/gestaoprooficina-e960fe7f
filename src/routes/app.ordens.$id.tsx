@@ -456,7 +456,7 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
   );
 }
 
-function PaymentDialog({ osId, unitId, onClose, suggested }: { osId: string; unitId: string; onClose: () => void; suggested: number }) {
+function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: string; unitId: string; osStatus: string; onClose: () => void; suggested: number }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [metodo, setMetodo] = useState<Method>("pix");
