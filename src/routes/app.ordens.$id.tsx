@@ -265,8 +265,8 @@ function OrderDetail() {
         </Table>
       </div>
 
-      {itemOpen && <ItemDialog osId={id} unitId={os.unit_id} onClose={() => setItemOpen(false)} />}
-      {payOpen && <PaymentDialog osId={id} unitId={os.unit_id} onClose={() => setPayOpen(false)} suggested={balance > 0 ? balance : total} />}
+      {itemOpen && <ItemDialog osId={id} unitId={os.unit_id} osStatus={os.status} onClose={() => setItemOpen(false)} />}
+      {payOpen && <PaymentDialog osId={id} unitId={os.unit_id} osStatus={os.status} onClose={() => setPayOpen(false)} suggested={balance > 0 ? balance : total} />}
     </div>
   );
 }
