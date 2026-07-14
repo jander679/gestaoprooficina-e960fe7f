@@ -475,8 +475,16 @@ function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: s
         observacao: obs || null, created_by: u.user?.id,
       });
       if (error) throw error;
+      if (osStatus === "concluida" || osStatus === "cancelada") {
+        await supabase.from("service_orders").update({ status: "em_andamento", data_conclusao: null, fechada_por: null, fechada_com_saldo: false } as never).eq("id", osId);
+      }
     },
-    onSuccess: () => { toast.success(t("common.saved")); onClose(); qc.invalidateQueries({ queryKey: ["os-payments", osId] }); },
+    onSuccess: () => {
+      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Pagamento adicionado — OS reaberta" : t("common.saved"));
+      onClose();
+      qc.invalidateQueries({ queryKey: ["os-payments", osId] });
+      qc.invalidateQueries({ queryKey: ["os", osId] });
+    },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
