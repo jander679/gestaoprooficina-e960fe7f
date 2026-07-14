@@ -400,9 +400,13 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
         referencia_id: refId || null, quantidade: q, preco_unitario: pu, desconto: d, subtotal,
       });
       if (error) throw error;
+      if (osStatus === "concluida" || osStatus === "cancelada") {
+        await supabase.from("service_orders").update({ status: "em_andamento", data_conclusao: null, fechada_por: null, fechada_com_saldo: false } as never).eq("id", osId);
+      }
     },
     onSuccess: () => {
-      toast.success(t("common.saved")); onClose();
+      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Item adicionado — OS reaberta" : t("common.saved"));
+      onClose();
       qc.invalidateQueries({ queryKey: ["os-items", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
     },
