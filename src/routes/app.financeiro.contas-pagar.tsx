@@ -116,6 +116,9 @@ function NovaContaDialog({ unitId, onClose }: { unitId: string; onClose: () => v
   const [vencimento, setVencimento] = useState(new Date().toISOString().slice(0, 10));
   const [metodo, setMetodo] = useState("");
   const [obs, setObs] = useState("");
+  const [recorrente, setRecorrente] = useState(false);
+  const [diaMes, setDiaMes] = useState("");
+  const [recAte, setRecAte] = useState("");
 
   const save = useMutation({
     mutationFn: async () => {
@@ -124,10 +127,13 @@ function NovaContaDialog({ unitId, onClose }: { unitId: string; onClose: () => v
         unit_id: unitId, descricao, categoria: categoria || null, fornecedor: fornecedor || null,
         valor: Number(valor || 0), vencimento, metodo: metodo || null, observacao: obs || null,
         created_by: u.user?.id,
-      });
+        recorrente,
+        recorrencia_dia_mes: recorrente ? (diaMes ? Number(diaMes) : Number(vencimento.slice(8, 10))) : null,
+        recorrencia_ate: recorrente && recAte ? recAte : null,
+      } as never);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Conta cadastrada"); onClose(); qc.invalidateQueries({ queryKey: ["contas-pagar", unitId] }); },
+    onSuccess: () => { toast.success(recorrente ? "Conta recorrente cadastrada — parcelas geradas" : "Conta cadastrada"); onClose(); qc.invalidateQueries({ queryKey: ["contas-pagar", unitId] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
@@ -158,6 +164,21 @@ function NovaContaDialog({ unitId, onClose }: { unitId: string; onClose: () => v
             <div><Label>Vencimento *</Label><Input type="date" value={vencimento} onChange={(e) => setVencimento(e.target.value)} /></div>
           </div>
           <div><Label>Método</Label><Input value={metodo} onChange={(e) => setMetodo(e.target.value)} placeholder="pix / boleto / cartão…" /></div>
+
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} />
+              Recorrência mensal (gera parcelas automáticas)
+            </label>
+            {recorrente && (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div><Label className="text-xs">Dia do mês</Label><Input type="number" min={1} max={31} placeholder={vencimento.slice(8, 10)} value={diaMes} onChange={(e) => setDiaMes(e.target.value)} /></div>
+                <div><Label className="text-xs">Repetir até (opcional)</Label><Input type="date" value={recAte} onChange={(e) => setRecAte(e.target.value)} /></div>
+                <div className="col-span-2 text-xs text-muted-foreground">Se não informar data final, serão geradas as próximas 12 parcelas.</div>
+              </div>
+            )}
+          </div>
+
           <div><Label>Observação</Label><Textarea value={obs} onChange={(e) => setObs(e.target.value)} /></div>
         </div>
         <DialogFooter><Button disabled={!descricao || !valor || save.isPending} onClick={() => save.mutate()}>Salvar</Button></DialogFooter>
