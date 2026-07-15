@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, ArrowLeft, Printer, FileDown, Save } from "lucide-react";
 import { traduzirErro } from "@/lib/errors";
 import { brl, fmtDateTime } from "@/lib/format";
+import { COMMON, OS_ITEM_TYPE, OS_STATUS, PAYMENT_METHOD, safeLabel } from "@/lib/pt-br";
 
 export const Route = createFileRoute("/app/ordens/$id")({
   head: () => ({ meta: [{ title: "Ordem de Serviço — OficinaPro" }] }),
@@ -35,7 +35,6 @@ interface Payment { id: string; metodo: Method; valor: number; pago_em: string; 
 
 function OrderDetail() {
   const { id } = Route.useParams();
-  const { t } = useTranslation();
   const qc = useQueryClient();
 
   const { data: os } = useQuery({
@@ -124,7 +123,7 @@ function OrderDetail() {
   const [itemOpen, setItemOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
 
-  if (!os) return <div>{t("common.loading")}</div>;
+  if (!os) return <div>{COMMON.loading}</div>;
   const total = items.reduce((s, i) => s + Number(i.subtotal), 0);
   const paid = payments.reduce((s, p) => s + Number(p.valor), 0);
   const balance = total - paid;
@@ -146,10 +145,10 @@ function OrderDetail() {
   return (
     <div>
       <PageHeader
-        title={`${t("os.number")}${os.numero}`}
+        title={`OS Nº ${os.numero}`}
         actions={
           <>
-            <Link to="/app/ordens"><Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" />{t("common.back")}</Button></Link>
+            <Link to="/app/ordens"><Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Button></Link>
             <Button variant="outline" onClick={printPdf}><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
             <Button variant="outline" onClick={printPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>
             {!isClosed && os.status !== "em_andamento" && (
@@ -162,7 +161,7 @@ function OrderDetail() {
             )}
             <Select value={os.status} onValueChange={(v) => changeStatus.mutate(v)}>
               <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
-              <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`os.status.${s}`)}</SelectItem>)}</SelectContent>
+              <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{safeLabel(OS_STATUS, s)}</SelectItem>)}</SelectContent>
             </Select>
           </>
         }
@@ -177,19 +176,19 @@ function OrderDetail() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground">{t("os.customer")}</div>
+          <div className="text-xs text-muted-foreground">Cliente</div>
           <div className="font-medium">{os.customers?.nome ?? "—"}</div>
           <div className="text-xs text-muted-foreground">{os.customers?.telefone ?? ""}</div>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground">{t("os.vehicle")}</div>
+          <div className="text-xs text-muted-foreground">Veículo</div>
           <div className="font-medium">{[os.vehicles?.marca, os.vehicles?.modelo].filter(Boolean).join(" ") || "—"}</div>
           <div className="text-xs text-muted-foreground">{os.vehicles?.placa ?? ""} {os.vehicles?.ano ? `· ${os.vehicles.ano}` : ""}</div>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground">{t("os.openedAt")}</div>
+          <div className="text-xs text-muted-foreground">Aberta em</div>
           <div className="font-medium">{fmtDateTime(os.data_abertura)}</div>
-          <Badge className="mt-1" variant="secondary">{t(`os.status.${os.status}`)}</Badge>
+          <Badge className="mt-1" variant="secondary">{safeLabel(OS_STATUS, os.status)}</Badge>
         </div>
       </div>
 
@@ -205,26 +204,26 @@ function OrderDetail() {
 
       <div className="mt-6 rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="font-medium">{t("os.items")}</div>
-          <Button size="sm" onClick={() => setItemOpen(true)}><Plus className="mr-1 h-4 w-4" />{t("os.addItem")}</Button>
+          <div className="font-medium">Itens da OS</div>
+          <Button size="sm" onClick={() => setItemOpen(true)}><Plus className="mr-1 h-4 w-4" />Adicionar item</Button>
         </div>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("common.type")}</TableHead>
-              <TableHead>{t("common.description")}</TableHead>
-              <TableHead className="text-right">{t("common.quantity")}</TableHead>
-              <TableHead className="text-right">{t("common.price")}</TableHead>
-              <TableHead className="text-right">{t("os.discount")}</TableHead>
-              <TableHead className="text-right">{t("os.subtotal")}</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead className="text-right">Qtd</TableHead>
+              <TableHead className="text-right">Preço</TableHead>
+              <TableHead className="text-right">Desconto</TableHead>
+              <TableHead className="text-right">Subtotal</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("common.empty")}</TableCell></TableRow>}
+            {items.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{COMMON.empty}</TableCell></TableRow>}
             {items.map((i) => (
               <TableRow key={i.id}>
-                <TableCell><Badge variant="outline">{t(`os.itemType.${i.tipo}`)}</Badge></TableCell>
+                <TableCell><Badge variant="outline">{safeLabel(OS_ITEM_TYPE, i.tipo)}</Badge></TableCell>
                 <TableCell>{i.descricao}</TableCell>
                 <TableCell className="text-right">{i.quantidade}</TableCell>
                 <TableCell className="text-right">{brl(i.preco_unitario)}</TableCell>
@@ -238,24 +237,24 @@ function OrderDetail() {
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">{t("common.total")}</div><div className="text-2xl font-semibold">{brl(total)}</div></div>
-        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">{t("os.paid")}</div><div className="text-2xl font-semibold text-emerald-600">{brl(paid)}</div></div>
-        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">{t("os.balance")}</div><div className={`text-2xl font-semibold ${balance > 0 ? "text-amber-600" : ""}`}>{brl(balance)}</div></div>
+        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Total</div><div className="text-2xl font-semibold">{brl(total)}</div></div>
+        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Pago</div><div className="text-2xl font-semibold text-emerald-600">{brl(paid)}</div></div>
+        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Saldo</div><div className={`text-2xl font-semibold ${balance > 0 ? "text-amber-600" : ""}`}>{brl(balance)}</div></div>
       </div>
 
       <div className="mt-6 rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="font-medium">{t("os.payments")}</div>
-          <Button size="sm" onClick={() => setPayOpen(true)}><Plus className="mr-1 h-4 w-4" />{t("os.addPayment")}</Button>
+          <div className="font-medium">Pagamentos</div>
+          <Button size="sm" onClick={() => setPayOpen(true)}><Plus className="mr-1 h-4 w-4" />Registrar pagamento</Button>
         </div>
         <Table>
-          <TableHeader><TableRow><TableHead>{t("common.createdAt")}</TableHead><TableHead>{t("finance.method")}</TableHead><TableHead className="text-right">{t("common.total")}</TableHead><TableHead>{t("common.description")}</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Método</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Observação</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
           <TableBody>
-            {payments.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{t("common.empty")}</TableCell></TableRow>}
+            {payments.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{COMMON.empty}</TableCell></TableRow>}
             {payments.map((p) => (
               <TableRow key={p.id}>
                 <TableCell>{fmtDateTime(p.pago_em)}</TableCell>
-                <TableCell>{t(`os.method.${p.metodo}`)}</TableCell>
+                <TableCell>{safeLabel(PAYMENT_METHOD, p.metodo)}</TableCell>
                 <TableCell className="text-right font-medium">{brl(p.valor)}</TableCell>
                 <TableCell>{p.observacao ?? ""}</TableCell>
                 <TableCell><Button size="icon" variant="ghost" onClick={() => removePayment.mutate(p.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
@@ -354,7 +353,6 @@ function OsEditableFields({
 }
 
 function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId: string; osStatus: string; onClose: () => void }) {
-  const { t } = useTranslation();
   const qc = useQueryClient();
   const [tipo, setTipo] = useState<ItemType>("servico");
   const [descricao, setDescricao] = useState("");
@@ -405,7 +403,7 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
       }
     },
     onSuccess: () => {
-      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Item adicionado — OS reaberta" : t("common.saved"));
+      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Item adicionado — OS reaberta" : COMMON.saved);
       onClose();
       qc.invalidateQueries({ queryKey: ["os-items", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
@@ -416,22 +414,22 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader><DialogTitle>{t("os.addItem")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Adicionar item</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div>
-            <Label>{t("common.type")}</Label>
+            <Label>Tipo</Label>
             <Select value={tipo} onValueChange={(v) => { setTipo(v as ItemType); setRefId(""); setDescricao(""); setPreco(""); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="servico">{t("os.itemType.servico")}</SelectItem>
-                <SelectItem value="peca">{t("os.itemType.peca")}</SelectItem>
-                <SelectItem value="descricao_livre">{t("os.itemType.descricao_livre")}</SelectItem>
+                <SelectItem value="servico">Serviço</SelectItem>
+                <SelectItem value="peca">Peça</SelectItem>
+                <SelectItem value="descricao_livre">Descrição livre</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {tipo === "servico" && (
             <div>
-              <Label>{t("os.catalogRef")}</Label>
+              <Label>Referência do catálogo</Label>
               <Select value={refId} onValueChange={pickCatalog}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>{services.map((s: { id: string; nome: string }) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
@@ -440,28 +438,27 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
           )}
           {tipo === "peca" && (
             <div>
-              <Label>{t("os.catalogRef")}</Label>
+              <Label>Referência do catálogo</Label>
               <Select value={refId} onValueChange={pickCatalog}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>{parts.map((p: { id: string; nome: string }) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           )}
-          <div><Label>{t("common.description")} *</Label><Input value={descricao} onChange={(e) => setDescricao(e.target.value)} /></div>
+          <div><Label>Descrição *</Label><Input value={descricao} onChange={(e) => setDescricao(e.target.value)} /></div>
           <div className="grid grid-cols-3 gap-2">
-            <div><Label>{t("common.quantity")}</Label><Input type="number" step="0.01" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></div>
-            <div><Label>{t("common.price")}</Label><Input type="number" step="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} /></div>
-            <div><Label>{t("os.discount")}</Label><Input type="number" step="0.01" value={desconto} onChange={(e) => setDesconto(e.target.value)} /></div>
+            <div><Label>Qtd</Label><Input type="number" step="0.01" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></div>
+            <div><Label>Preço</Label><Input type="number" step="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} /></div>
+            <div><Label>Desconto</Label><Input type="number" step="0.01" value={desconto} onChange={(e) => setDesconto(e.target.value)} /></div>
           </div>
         </div>
-        <DialogFooter><Button disabled={!descricao || save.isPending} onClick={() => save.mutate()}>{t("common.add")}</Button></DialogFooter>
+        <DialogFooter><Button disabled={!descricao || save.isPending} onClick={() => save.mutate()}>Adicionar</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
 function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: string; unitId: string; osStatus: string; onClose: () => void; suggested: number }) {
-  const { t } = useTranslation();
   const qc = useQueryClient();
   const [metodo, setMetodo] = useState<Method>("pix");
   const [valor, setValor] = useState(String(suggested || ""));
@@ -480,7 +477,7 @@ function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: s
       }
     },
     onSuccess: () => {
-      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Pagamento adicionado — OS reaberta" : t("common.saved"));
+      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Pagamento adicionado — OS reaberta" : COMMON.saved);
       onClose();
       qc.invalidateQueries({ queryKey: ["os-payments", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
@@ -491,19 +488,19 @@ function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: s
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader><DialogTitle>{t("os.addPayment")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Registrar pagamento</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div>
-            <Label>{t("finance.method")}</Label>
+            <Label>Método</Label>
             <Select value={metodo} onValueChange={(v) => setMetodo(v as Method)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{t(`os.method.${m}`)}</SelectItem>)}</SelectContent>
+              <SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{safeLabel(PAYMENT_METHOD, m)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>{t("common.total")} *</Label><Input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
-          <div><Label>{t("common.description")}</Label><Textarea value={obs} onChange={(e) => setObs(e.target.value)} /></div>
+          <div><Label>Valor *</Label><Input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
+          <div><Label>Observação</Label><Textarea value={obs} onChange={(e) => setObs(e.target.value)} /></div>
         </div>
-        <DialogFooter><Button disabled={!valor || save.isPending} onClick={() => save.mutate()}>{t("common.save")}</Button></DialogFooter>
+        <DialogFooter><Button disabled={!valor || save.isPending} onClick={() => save.mutate()}>Salvar</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );

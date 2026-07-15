@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveUnit } from "@/hooks/use-active-unit";
 import { PageHeader, EmptyState } from "@/components/page-header";
@@ -17,6 +16,7 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { traduzirErro } from "@/lib/errors";
 import { brl, fmtDateTime } from "@/lib/format";
+import { COMMON, OS_STATUS, STAFF_ROLE, safeLabel } from "@/lib/pt-br";
 
 export const Route = createFileRoute("/app/ordens")({
   head: () => ({ meta: [{ title: "Ordens de Serviço — OficinaPro" }] }),
@@ -33,7 +33,6 @@ interface OS {
 const STATUSES = ["aberta","em_andamento","aguardando_peca","aguardando_aprovacao","concluida","cancelada"] as const;
 
 function OrdersPage() {
-  const { t } = useTranslation();
   const { activeUnitId } = useActiveUnit();
   const nav = useNavigate();
   const qc = useQueryClient();
@@ -153,29 +152,29 @@ function OrdersPage() {
       return os.id as string;
     },
     onSuccess: (id) => {
-      toast.success(t("common.saved")); setOpen(false); resetForm();
+      toast.success(COMMON.saved); setOpen(false); resetForm();
       qc.invalidateQueries({ queryKey: ["orders"] });
       nav({ to: "/app/ordens/$id", params: { id } });
     },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
-  if (!activeUnitId) return <EmptyState title={t("common.selectUnit")} />;
+  if (!activeUnitId) return <EmptyState title={COMMON.selectUnit} />;
 
   return (
     <div>
       <PageHeader
-        title={t("os.title")}
+        title="Ordens de Serviço"
         actions={
           <>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("common.all")}</SelectItem>
-                {STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`os.status.${s}`)}</SelectItem>)}
+                <SelectItem value="all">{COMMON.all}</SelectItem>
+                {STATUSES.map((s) => <SelectItem key={s} value={s}>{safeLabel(OS_STATUS, s)}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" />{t("os.new")}</Button>
+            <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" />Nova OS</Button>
           </>
         }
       />
@@ -184,23 +183,23 @@ function OrdersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("os.number")}</TableHead>
-              <TableHead>{t("os.openedAt")}</TableHead>
-              <TableHead>{t("os.customer")}</TableHead>
-              <TableHead>{t("os.vehicle")}</TableHead>
-              <TableHead>{t("common.status")}</TableHead>
-              <TableHead className="text-right">{t("common.total")}</TableHead>
+              <TableHead>OS Nº</TableHead>
+              <TableHead>Aberta em</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Veículo</TableHead>
+              <TableHead>{COMMON.status}</TableHead>
+              <TableHead className="text-right">{COMMON.total}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("common.empty")}</TableCell></TableRow>}
+            {data.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{COMMON.empty}</TableCell></TableRow>}
             {data.map((o) => (
               <TableRow key={o.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell><Link to="/app/ordens/$id" params={{ id: o.id }} className="font-medium">#{o.numero}</Link></TableCell>
                 <TableCell>{fmtDateTime(o.data_abertura)}</TableCell>
                 <TableCell>{o.customers?.nome ?? "—"}</TableCell>
                 <TableCell>{[o.vehicles?.placa, o.vehicles?.modelo].filter(Boolean).join(" · ") || "—"}</TableCell>
-                <TableCell><Badge variant="secondary">{t(`os.status.${o.status}`)}</Badge></TableCell>
+                <TableCell><Badge variant="secondary">{safeLabel(OS_STATUS, o.status)}</Badge></TableCell>
                 <TableCell className="text-right font-medium">{brl(o.total ?? 0)}</TableCell>
               </TableRow>
             ))}
@@ -210,12 +209,12 @@ function OrdersPage() {
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>{t("os.new")}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Nova Ordem de Serviço</DialogTitle></DialogHeader>
           <div className="grid gap-3 md:grid-cols-2">
             <div className="md:col-span-2">
-              <Label>{t("os.customer")} *</Label>
+              <Label>Cliente *</Label>
               <Select value={selCustomer} onValueChange={(v) => { setSelCustomer(v); setSelVehicle(""); }}>
-                <SelectTrigger><SelectValue placeholder={t("common.selectCustomer")} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={COMMON.selectCustomer} /></SelectTrigger>
                 <SelectContent>{customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
               </Select>
               {customers.length === 0 && (
@@ -225,27 +224,27 @@ function OrdersPage() {
               )}
             </div>
             <div>
-              <Label>{t("os.vehicle")}</Label>
+              <Label>Veículo</Label>
               <Select value={selVehicle} onValueChange={setSelVehicle} disabled={!selCustomer}>
-                <SelectTrigger><SelectValue placeholder={t("os.selectVehicle")} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione o veículo" /></SelectTrigger>
                 <SelectContent>{vehicles.map((v) => <SelectItem key={v.id} value={v.id}>{[v.placa, v.marca, v.modelo].filter(Boolean).join(" · ")}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
-              <Label>{t("os.mechanic")}</Label>
+              <Label>Funcionário responsável</Label>
               <Select value={selMecanico} onValueChange={setSelMecanico}>
-                <SelectTrigger><SelectValue placeholder={t("os.selectMechanic")} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecionar funcionário" /></SelectTrigger>
                 <SelectContent>
                   {mecanicos.map((m) => (
                     <SelectItem key={m.user_id} value={m.user_id}>
-                      {m.profiles.full_name || m.profiles.username || "—"} · {t(`staff.roles.${m.role}`, m.role)}
+                      {m.profiles.full_name || m.profiles.username || "—"} · {safeLabel(STAFF_ROLE, m.role)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>{t("os.kmIn")}</Label>
+              <Label>KM na entrada</Label>
               <Input type="number" value={kmEntrada} onChange={(e) => setKmEntrada(e.target.value)} />
             </div>
             <div>
@@ -272,7 +271,7 @@ function OrdersPage() {
               <Textarea value={observacoes} onChange={(e) => setObservacoes(e.target.value)} rows={3} />
             </div>
           </div>
-          <DialogFooter><Button disabled={!selCustomer || create.isPending} onClick={() => create.mutate()}>{t("common.create")}</Button></DialogFooter>
+          <DialogFooter><Button disabled={!selCustomer || create.isPending} onClick={() => create.mutate()}>{COMMON.create}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
