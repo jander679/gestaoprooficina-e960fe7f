@@ -126,6 +126,36 @@ const resources = {
   },
 };
 
+const missingKeyPtBr: Record<string, string> = {
+  "app.name": "OficinaPro",
+  "common.all": "Todos",
+  "common.new": "Novo",
+  "common.save": "Salvar",
+  "common.back": "Voltar",
+  "common.status": "Status",
+  "common.total": "Total",
+  "common.actions": "Ações",
+  "common.empty": "Nenhum registro encontrado.",
+  "os.title": "Ordens de Serviço",
+  "os.new": "Nova OS",
+  "os.number": "OS Nº ",
+  "os.openedAt": "Aberta em",
+  "os.customer": "Cliente",
+  "os.vehicle": "Veículo",
+  "os.items": "Itens",
+  "os.payments": "Pagamentos",
+  "finance.title": "Financeiro",
+};
+
+function portugueseFallback(key: string) {
+  if (missingKeyPtBr[key]) return missingKeyPtBr[key];
+  const last = key.split(".").pop() ?? key;
+  return last
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replaceAll("_", " ")
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
 if (!i18n.isInitialized) {
   if (typeof window !== "undefined") {
     try { window.localStorage.removeItem("i18nextLng"); } catch { /* ignore */ }
@@ -141,6 +171,8 @@ if (!i18n.isInitialized) {
       initAsync: false,
       returnNull: false,
       returnEmptyString: false,
+      saveMissing: false,
+      parseMissingKeyHandler: portugueseFallback,
       interpolation: { escapeValue: false },
       detection: undefined,
       react: { useSuspense: false },
