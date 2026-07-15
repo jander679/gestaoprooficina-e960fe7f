@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, ArrowLeft, Printer, FileDown, Save } from "lucide-react";
 import { traduzirErro } from "@/lib/errors";
 import { brl, fmtDateTime } from "@/lib/format";
+import { COMMON, OS_ITEM_TYPE, OS_STATUS, PAYMENT_METHOD, safeLabel } from "@/lib/pt-br";
 
 export const Route = createFileRoute("/app/ordens/$id")({
   head: () => ({ meta: [{ title: "Ordem de Serviço — OficinaPro" }] }),
@@ -35,7 +35,6 @@ interface Payment { id: string; metodo: Method; valor: number; pago_em: string; 
 
 function OrderDetail() {
   const { id } = Route.useParams();
-  const { t } = useTranslation();
   const qc = useQueryClient();
 
   const { data: os } = useQuery({
@@ -124,7 +123,7 @@ function OrderDetail() {
   const [itemOpen, setItemOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
 
-  if (!os) return <div>{t("common.loading")}</div>;
+  if (!os) return <div>{COMMON.loading}</div>;
   const total = items.reduce((s, i) => s + Number(i.subtotal), 0);
   const paid = payments.reduce((s, p) => s + Number(p.valor), 0);
   const balance = total - paid;
@@ -146,10 +145,10 @@ function OrderDetail() {
   return (
     <div>
       <PageHeader
-        title={`${t("os.number")}${os.numero}`}
+        title={`OS Nº ${os.numero}`}
         actions={
           <>
-            <Link to="/app/ordens"><Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" />{t("common.back")}</Button></Link>
+            <Link to="/app/ordens"><Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Button></Link>
             <Button variant="outline" onClick={printPdf}><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
             <Button variant="outline" onClick={printPdf}><FileDown className="mr-2 h-4 w-4" />PDF</Button>
             {!isClosed && os.status !== "em_andamento" && (
@@ -162,7 +161,7 @@ function OrderDetail() {
             )}
             <Select value={os.status} onValueChange={(v) => changeStatus.mutate(v)}>
               <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
-              <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`os.status.${s}`)}</SelectItem>)}</SelectContent>
+              <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{safeLabel(OS_STATUS, s)}</SelectItem>)}</SelectContent>
             </Select>
           </>
         }
@@ -177,19 +176,19 @@ function OrderDetail() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground">{t("os.customer")}</div>
+          <div className="text-xs text-muted-foreground">Cliente</div>
           <div className="font-medium">{os.customers?.nome ?? "—"}</div>
           <div className="text-xs text-muted-foreground">{os.customers?.telefone ?? ""}</div>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground">{t("os.vehicle")}</div>
+          <div className="text-xs text-muted-foreground">Veículo</div>
           <div className="font-medium">{[os.vehicles?.marca, os.vehicles?.modelo].filter(Boolean).join(" ") || "—"}</div>
           <div className="text-xs text-muted-foreground">{os.vehicles?.placa ?? ""} {os.vehicles?.ano ? `· ${os.vehicles.ano}` : ""}</div>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <div className="text-xs text-muted-foreground">{t("os.openedAt")}</div>
+          <div className="text-xs text-muted-foreground">Aberta em</div>
           <div className="font-medium">{fmtDateTime(os.data_abertura)}</div>
-          <Badge className="mt-1" variant="secondary">{t(`os.status.${os.status}`)}</Badge>
+          <Badge className="mt-1" variant="secondary">{safeLabel(OS_STATUS, os.status)}</Badge>
         </div>
       </div>
 
@@ -205,26 +204,26 @@ function OrderDetail() {
 
       <div className="mt-6 rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="font-medium">{t("os.items")}</div>
-          <Button size="sm" onClick={() => setItemOpen(true)}><Plus className="mr-1 h-4 w-4" />{t("os.addItem")}</Button>
+          <div className="font-medium">Itens da OS</div>
+          <Button size="sm" onClick={() => setItemOpen(true)}><Plus className="mr-1 h-4 w-4" />Adicionar item</Button>
         </div>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("common.type")}</TableHead>
-              <TableHead>{t("common.description")}</TableHead>
-              <TableHead className="text-right">{t("common.quantity")}</TableHead>
-              <TableHead className="text-right">{t("common.price")}</TableHead>
-              <TableHead className="text-right">{t("os.discount")}</TableHead>
-              <TableHead className="text-right">{t("os.subtotal")}</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead className="text-right">Qtd</TableHead>
+              <TableHead className="text-right">Preço</TableHead>
+              <TableHead className="text-right">Desconto</TableHead>
+              <TableHead className="text-right">Subtotal</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("common.empty")}</TableCell></TableRow>}
+            {items.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{COMMON.empty}</TableCell></TableRow>}
             {items.map((i) => (
               <TableRow key={i.id}>
-                <TableCell><Badge variant="outline">{t(`os.itemType.${i.tipo}`)}</Badge></TableCell>
+                <TableCell><Badge variant="outline">{safeLabel(OS_ITEM_TYPE, i.tipo)}</Badge></TableCell>
                 <TableCell>{i.descricao}</TableCell>
                 <TableCell className="text-right">{i.quantidade}</TableCell>
                 <TableCell className="text-right">{brl(i.preco_unitario)}</TableCell>
@@ -238,24 +237,24 @@ function OrderDetail() {
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">{t("common.total")}</div><div className="text-2xl font-semibold">{brl(total)}</div></div>
-        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">{t("os.paid")}</div><div className="text-2xl font-semibold text-emerald-600">{brl(paid)}</div></div>
-        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">{t("os.balance")}</div><div className={`text-2xl font-semibold ${balance > 0 ? "text-amber-600" : ""}`}>{brl(balance)}</div></div>
+        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Total</div><div className="text-2xl font-semibold">{brl(total)}</div></div>
+        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Pago</div><div className="text-2xl font-semibold text-emerald-600">{brl(paid)}</div></div>
+        <div className="rounded-xl border bg-card p-4"><div className="text-xs text-muted-foreground">Saldo</div><div className={`text-2xl font-semibold ${balance > 0 ? "text-amber-600" : ""}`}>{brl(balance)}</div></div>
       </div>
 
       <div className="mt-6 rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="font-medium">{t("os.payments")}</div>
-          <Button size="sm" onClick={() => setPayOpen(true)}><Plus className="mr-1 h-4 w-4" />{t("os.addPayment")}</Button>
+          <div className="font-medium">Pagamentos</div>
+          <Button size="sm" onClick={() => setPayOpen(true)}><Plus className="mr-1 h-4 w-4" />Registrar pagamento</Button>
         </div>
         <Table>
-          <TableHeader><TableRow><TableHead>{t("common.createdAt")}</TableHead><TableHead>{t("finance.method")}</TableHead><TableHead className="text-right">{t("common.total")}</TableHead><TableHead>{t("common.description")}</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Método</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Observação</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
           <TableBody>
-            {payments.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{t("common.empty")}</TableCell></TableRow>}
+            {payments.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{COMMON.empty}</TableCell></TableRow>}
             {payments.map((p) => (
               <TableRow key={p.id}>
                 <TableCell>{fmtDateTime(p.pago_em)}</TableCell>
-                <TableCell>{t(`os.method.${p.metodo}`)}</TableCell>
+                <TableCell>{safeLabel(PAYMENT_METHOD, p.metodo)}</TableCell>
                 <TableCell className="text-right font-medium">{brl(p.valor)}</TableCell>
                 <TableCell>{p.observacao ?? ""}</TableCell>
                 <TableCell><Button size="icon" variant="ghost" onClick={() => removePayment.mutate(p.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
