@@ -353,7 +353,6 @@ function OsEditableFields({
 }
 
 function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId: string; osStatus: string; onClose: () => void }) {
-  const { t } = useTranslation();
   const qc = useQueryClient();
   const [tipo, setTipo] = useState<ItemType>("servico");
   const [descricao, setDescricao] = useState("");
@@ -404,7 +403,7 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
       }
     },
     onSuccess: () => {
-      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Item adicionado — OS reaberta" : t("common.saved"));
+      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Item adicionado — OS reaberta" : COMMON.saved);
       onClose();
       qc.invalidateQueries({ queryKey: ["os-items", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
@@ -415,22 +414,22 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader><DialogTitle>{t("os.addItem")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Adicionar item</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div>
-            <Label>{t("common.type")}</Label>
+            <Label>Tipo</Label>
             <Select value={tipo} onValueChange={(v) => { setTipo(v as ItemType); setRefId(""); setDescricao(""); setPreco(""); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="servico">{t("os.itemType.servico")}</SelectItem>
-                <SelectItem value="peca">{t("os.itemType.peca")}</SelectItem>
-                <SelectItem value="descricao_livre">{t("os.itemType.descricao_livre")}</SelectItem>
+                <SelectItem value="servico">Serviço</SelectItem>
+                <SelectItem value="peca">Peça</SelectItem>
+                <SelectItem value="descricao_livre">Descrição livre</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {tipo === "servico" && (
             <div>
-              <Label>{t("os.catalogRef")}</Label>
+              <Label>Referência do catálogo</Label>
               <Select value={refId} onValueChange={pickCatalog}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>{services.map((s: { id: string; nome: string }) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
@@ -439,28 +438,27 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
           )}
           {tipo === "peca" && (
             <div>
-              <Label>{t("os.catalogRef")}</Label>
+              <Label>Referência do catálogo</Label>
               <Select value={refId} onValueChange={pickCatalog}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>{parts.map((p: { id: string; nome: string }) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           )}
-          <div><Label>{t("common.description")} *</Label><Input value={descricao} onChange={(e) => setDescricao(e.target.value)} /></div>
+          <div><Label>Descrição *</Label><Input value={descricao} onChange={(e) => setDescricao(e.target.value)} /></div>
           <div className="grid grid-cols-3 gap-2">
-            <div><Label>{t("common.quantity")}</Label><Input type="number" step="0.01" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></div>
-            <div><Label>{t("common.price")}</Label><Input type="number" step="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} /></div>
-            <div><Label>{t("os.discount")}</Label><Input type="number" step="0.01" value={desconto} onChange={(e) => setDesconto(e.target.value)} /></div>
+            <div><Label>Qtd</Label><Input type="number" step="0.01" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></div>
+            <div><Label>Preço</Label><Input type="number" step="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} /></div>
+            <div><Label>Desconto</Label><Input type="number" step="0.01" value={desconto} onChange={(e) => setDesconto(e.target.value)} /></div>
           </div>
         </div>
-        <DialogFooter><Button disabled={!descricao || save.isPending} onClick={() => save.mutate()}>{t("common.add")}</Button></DialogFooter>
+        <DialogFooter><Button disabled={!descricao || save.isPending} onClick={() => save.mutate()}>Adicionar</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
 function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: string; unitId: string; osStatus: string; onClose: () => void; suggested: number }) {
-  const { t } = useTranslation();
   const qc = useQueryClient();
   const [metodo, setMetodo] = useState<Method>("pix");
   const [valor, setValor] = useState(String(suggested || ""));
@@ -479,7 +477,7 @@ function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: s
       }
     },
     onSuccess: () => {
-      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Pagamento adicionado — OS reaberta" : t("common.saved"));
+      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Pagamento adicionado — OS reaberta" : COMMON.saved);
       onClose();
       qc.invalidateQueries({ queryKey: ["os-payments", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
@@ -490,19 +488,19 @@ function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: s
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader><DialogTitle>{t("os.addPayment")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Registrar pagamento</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div>
-            <Label>{t("finance.method")}</Label>
+            <Label>Método</Label>
             <Select value={metodo} onValueChange={(v) => setMetodo(v as Method)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{t(`os.method.${m}`)}</SelectItem>)}</SelectContent>
+              <SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{safeLabel(PAYMENT_METHOD, m)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>{t("common.total")} *</Label><Input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
-          <div><Label>{t("common.description")}</Label><Textarea value={obs} onChange={(e) => setObs(e.target.value)} /></div>
+          <div><Label>Valor *</Label><Input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
+          <div><Label>Observação</Label><Textarea value={obs} onChange={(e) => setObs(e.target.value)} /></div>
         </div>
-        <DialogFooter><Button disabled={!valor || save.isPending} onClick={() => save.mutate()}>{t("common.save")}</Button></DialogFooter>
+        <DialogFooter><Button disabled={!valor || save.isPending} onClick={() => save.mutate()}>Salvar</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
