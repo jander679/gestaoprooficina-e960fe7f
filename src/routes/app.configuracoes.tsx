@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveUnit } from "@/hooks/use-active-unit";
@@ -21,14 +20,13 @@ export const Route = createFileRoute("/app/configuracoes")({
 });
 
 function SettingsPage() {
-  const { t } = useTranslation();
   return (
     <div>
-      <PageHeader title={t("settings.title")} />
+      <PageHeader title="Configurações" />
       <Tabs defaultValue="company">
         <TabsList>
-          <TabsTrigger value="company">{t("settings.company")}</TabsTrigger>
-          <TabsTrigger value="units">{t("settings.units")}</TabsTrigger>
+          <TabsTrigger value="company">Empresa</TabsTrigger>
+          <TabsTrigger value="units">Unidades</TabsTrigger>
           <TabsTrigger value="fipe">Base FIPE</TabsTrigger>
         </TabsList>
         <TabsContent value="company" className="mt-6"><CompanySection /></TabsContent>
@@ -87,7 +85,6 @@ function FipeSection() {
 }
 
 function CompanySection() {
-  const { t } = useTranslation();
   const { user } = useAuth();
   const { activeMembership, refetch } = useActiveUnit();
   const qc = useQueryClient();
@@ -158,14 +155,14 @@ function CompanySection() {
             <DialogContent>
               <DialogHeader><DialogTitle>Nova empresa</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div><Label>{t("settings.cnpj")} <span className="text-destructive">*</span></Label><Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} /></div>
-                <div><Label>{t("settings.razaoSocial")} <span className="text-destructive">*</span></Label><Input value={form.razao_social} onChange={(e) => setForm({ ...form, razao_social: e.target.value })} /></div>
-                <div><Label>{t("settings.nomeFantasia")}</Label><Input value={form.nome_fantasia} onChange={(e) => setForm({ ...form, nome_fantasia: e.target.value })} /></div>
+                <div><Label>CNPJ <span className="text-destructive">*</span></Label><Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} /></div>
+                <div><Label>Razão Social <span className="text-destructive">*</span></Label><Input value={form.razao_social} onChange={(e) => setForm({ ...form, razao_social: e.target.value })} /></div>
+                <div><Label>Nome Fantasia</Label><Input value={form.nome_fantasia} onChange={(e) => setForm({ ...form, nome_fantasia: e.target.value })} /></div>
                 <div><Label>Nome da primeira unidade</Label><Input placeholder="Matriz" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
               </div>
               <DialogFooter>
                 <Button onClick={() => create.mutate()} disabled={!form.cnpj.trim() || !form.razao_social.trim() || create.isPending}>
-                  {create.isPending ? "Salvando..." : t("common.save")}
+                  {create.isPending ? "Salvando..." : "Salvar"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -209,7 +206,6 @@ function CompanySection() {
 type Unit = { id: string; nome: string; endereco: string | null; cidade: string | null; uf: string | null; cep: string | null; telefone: string | null; company_id: string };
 
 function UnitsSection() {
-  const { t } = useTranslation();
   const { activeMembership, memberships, refetch } = useActiveUnit();
   const companyId = activeMembership?.units?.company_id;
   const qc = useQueryClient();
@@ -259,9 +255,9 @@ function UnitsSection() {
     <div>
       <div className="mb-4 flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />{t("settings.newUnit")}</Button></DialogTrigger>
+          <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Nova unidade</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>{t("settings.newUnit")}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Nova unidade</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>Nome <span className="text-destructive">*</span></Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
               <div className="col-span-2"><Label>Endereço</Label><Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} /></div>
@@ -272,7 +268,7 @@ function UnitsSection() {
             </div>
             <DialogFooter>
               <Button onClick={() => create.mutate()} disabled={!form.nome.trim() || create.isPending}>
-                {create.isPending ? "Salvando..." : t("common.save")}
+                {create.isPending ? "Salvando..." : "Salvar"}
               </Button>
             </DialogFooter>
           </DialogContent>

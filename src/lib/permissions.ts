@@ -69,7 +69,7 @@ const MATRIX: Record<Action, Role[]> = {
   "orders:print": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
 
 
-  "payments:write": ["oficina_admin", "financeiro", "recepcionista"],
+  "payments:write": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
   "settings:write": ["oficina_admin"],
   "fipe:sync": ["oficina_admin"],
   "finance:edit": ["oficina_admin", "financeiro"],

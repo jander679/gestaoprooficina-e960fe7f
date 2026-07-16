@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +11,6 @@ export const Route = createFileRoute("/pendente")({
 });
 
 function Pending() {
-  const { t } = useTranslation();
   const { user, loading } = useAuth();
   const nav = useNavigate();
 
@@ -44,7 +42,7 @@ function Pending() {
         </p>
         <p className="mt-2 text-xs text-muted-foreground">Esta página atualiza automaticamente a cada 10 segundos.</p>
         <Button className="mt-8" variant="outline" onClick={() => supabase.auth.signOut().then(() => nav({ to: "/auth" }))}>
-          {t("auth.signOut")}
+          Sair
         </Button>
       </div>
     </div>

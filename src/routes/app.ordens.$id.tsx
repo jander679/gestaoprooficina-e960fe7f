@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Trash2, ArrowLeft, Printer, FileDown, Save } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Printer, FileDown, Save, Pencil } from "lucide-react";
 import { traduzirErro } from "@/lib/errors";
 import { brl, fmtDateTime } from "@/lib/format";
 import { COMMON, OS_ITEM_TYPE, OS_STATUS, PAYMENT_METHOD, safeLabel } from "@/lib/pt-br";
@@ -122,6 +122,8 @@ function OrderDetail() {
 
   const [itemOpen, setItemOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
   if (!os) return <div>{COMMON.loading}</div>;
   const total = items.reduce((s, i) => s + Number(i.subtotal), 0);
@@ -205,7 +207,7 @@ function OrderDetail() {
       <div className="mt-6 rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="font-medium">Itens da OS</div>
-          <Button size="sm" onClick={() => setItemOpen(true)}><Plus className="mr-1 h-4 w-4" />Adicionar item</Button>
+          <Button size="sm" onClick={() => { setEditingItem(null); setItemOpen(true); }}><Plus className="mr-1 h-4 w-4" />Adicionar item</Button>
         </div>
         <Table>
           <TableHeader>
@@ -216,7 +218,7 @@ function OrderDetail() {
               <TableHead className="text-right">Preço</TableHead>
               <TableHead className="text-right">Desconto</TableHead>
               <TableHead className="text-right">Subtotal</TableHead>
-              <TableHead className="w-12"></TableHead>
+              <TableHead className="w-24 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -229,7 +231,10 @@ function OrderDetail() {
                 <TableCell className="text-right">{brl(i.preco_unitario)}</TableCell>
                 <TableCell className="text-right">{brl(i.desconto)}</TableCell>
                 <TableCell className="text-right font-medium">{brl(i.subtotal)}</TableCell>
-                <TableCell><Button size="icon" variant="ghost" onClick={() => removeItem.mutate(i.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                <TableCell className="flex justify-end gap-1">
+                  <Button size="icon" variant="ghost" title="Editar item" onClick={() => { setEditingItem(i); setItemOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" title="Excluir item" onClick={() => confirm("Excluir este item da OS?") && removeItem.mutate(i.id)}><Trash2 className="h-4 w-4" /></Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -245,10 +250,10 @@ function OrderDetail() {
       <div className="mt-6 rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="font-medium">Pagamentos</div>
-          <Button size="sm" onClick={() => setPayOpen(true)}><Plus className="mr-1 h-4 w-4" />Registrar pagamento</Button>
+          <Button size="sm" onClick={() => { setEditingPayment(null); setPayOpen(true); }}><Plus className="mr-1 h-4 w-4" />Registrar pagamento</Button>
         </div>
         <Table>
-          <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Método</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Observação</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Método</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Observação</TableHead><TableHead className="w-24 text-right">Ações</TableHead></TableRow></TableHeader>
           <TableBody>
             {payments.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{COMMON.empty}</TableCell></TableRow>}
             {payments.map((p) => (
@@ -257,15 +262,18 @@ function OrderDetail() {
                 <TableCell>{safeLabel(PAYMENT_METHOD, p.metodo)}</TableCell>
                 <TableCell className="text-right font-medium">{brl(p.valor)}</TableCell>
                 <TableCell>{p.observacao ?? ""}</TableCell>
-                <TableCell><Button size="icon" variant="ghost" onClick={() => removePayment.mutate(p.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                <TableCell className="flex justify-end gap-1">
+                  <Button size="icon" variant="ghost" title="Editar pagamento" onClick={() => { setEditingPayment(p); setPayOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" title="Excluir pagamento" onClick={() => confirm("Excluir este pagamento da OS?") && removePayment.mutate(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
 
-      {itemOpen && <ItemDialog osId={id} unitId={os.unit_id} osStatus={os.status} onClose={() => setItemOpen(false)} />}
-      {payOpen && <PaymentDialog osId={id} unitId={os.unit_id} osStatus={os.status} onClose={() => setPayOpen(false)} suggested={balance > 0 ? balance : total} />}
+      {itemOpen && <ItemDialog osId={id} unitId={os.unit_id} osStatus={os.status} item={editingItem} onClose={() => { setItemOpen(false); setEditingItem(null); }} />}
+      {payOpen && <PaymentDialog osId={id} unitId={os.unit_id} osStatus={os.status} payment={editingPayment} onClose={() => { setPayOpen(false); setEditingPayment(null); }} suggested={balance > 0 ? balance : total} />}
     </div>
   );
 }
@@ -352,14 +360,15 @@ function OsEditableFields({
   );
 }
 
-function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId: string; osStatus: string; onClose: () => void }) {
+function ItemDialog({ osId, unitId, osStatus, item, onClose }: { osId: string; unitId: string; osStatus: string; item?: Item | null; onClose: () => void }) {
   const qc = useQueryClient();
-  const [tipo, setTipo] = useState<ItemType>("servico");
-  const [descricao, setDescricao] = useState("");
-  const [quantidade, setQuantidade] = useState("1");
-  const [preco, setPreco] = useState("");
-  const [desconto, setDesconto] = useState("0");
+  const [tipo, setTipo] = useState<ItemType>(item?.tipo ?? "servico");
+  const [descricao, setDescricao] = useState(item?.descricao ?? "");
+  const [quantidade, setQuantidade] = useState(item ? String(item.quantidade) : "1");
+  const [preco, setPreco] = useState(item ? String(item.preco_unitario) : "");
+  const [desconto, setDesconto] = useState(item ? String(item.desconto) : "0");
   const [refId, setRefId] = useState<string>("");
+  const isEditing = !!item;
 
   const { data: services = [] } = useQuery({
     queryKey: ["services-select", unitId],
@@ -393,17 +402,18 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
     mutationFn: async () => {
       const q = Number(quantidade || 0), pu = Number(preco || 0), d = Number(desconto || 0);
       const subtotal = Math.max(0, q * pu - d);
-      const { error } = await supabase.from("os_items").insert({
-        os_id: osId, unit_id: unitId, tipo, descricao,
-        referencia_id: refId || null, quantidade: q, preco_unitario: pu, desconto: d, subtotal,
-      });
+      const payload = { tipo, descricao, referencia_id: refId || null, quantidade: q, preco_unitario: pu, desconto: d, subtotal };
+      const { error } = isEditing
+        ? await supabase.from("os_items").update(payload).eq("id", item.id)
+        : await supabase.from("os_items").insert({ os_id: osId, unit_id: unitId, ...payload });
       if (error) throw error;
       if (osStatus === "concluida" || osStatus === "cancelada") {
         await supabase.from("service_orders").update({ status: "em_andamento", data_conclusao: null, fechada_por: null, fechada_com_saldo: false } as never).eq("id", osId);
       }
     },
     onSuccess: () => {
-      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Item adicionado — OS reaberta" : COMMON.saved);
+      const closed = osStatus === "concluida" || osStatus === "cancelada";
+      toast.success(closed ? "Item salvo — OS reaberta" : isEditing ? "Item atualizado" : "Item adicionado");
       onClose();
       qc.invalidateQueries({ queryKey: ["os-items", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
@@ -414,7 +424,7 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Adicionar item</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEditing ? "Editar item" : "Adicionar item"}</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div>
             <Label>Tipo</Label>
@@ -452,32 +462,43 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
             <div><Label>Desconto</Label><Input type="number" step="0.01" value={desconto} onChange={(e) => setDesconto(e.target.value)} /></div>
           </div>
         </div>
-        <DialogFooter><Button disabled={!descricao || save.isPending} onClick={() => save.mutate()}>Adicionar</Button></DialogFooter>
+        <DialogFooter><Button disabled={!descricao || save.isPending} onClick={() => save.mutate()}>{isEditing ? "Salvar alterações" : "Adicionar"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: string; unitId: string; osStatus: string; onClose: () => void; suggested: number }) {
+function toDateTimeInput(value: string | null | undefined) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function PaymentDialog({ osId, unitId, osStatus, payment, onClose, suggested }: { osId: string; unitId: string; osStatus: string; payment?: Payment | null; onClose: () => void; suggested: number }) {
   const qc = useQueryClient();
-  const [metodo, setMetodo] = useState<Method>("pix");
-  const [valor, setValor] = useState(String(suggested || ""));
-  const [obs, setObs] = useState("");
+  const [metodo, setMetodo] = useState<Method>(payment?.metodo ?? "pix");
+  const [valor, setValor] = useState(payment ? String(payment.valor) : String(suggested || ""));
+  const [pagoEm, setPagoEm] = useState(payment ? toDateTimeInput(payment.pago_em) : toDateTimeInput(new Date().toISOString()));
+  const [obs, setObs] = useState(payment?.observacao ?? "");
+  const isEditing = !!payment;
 
   const save = useMutation({
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
-      const { error } = await supabase.from("os_payments").insert({
-        os_id: osId, unit_id: unitId, metodo, valor: Number(valor || 0),
-        observacao: obs || null, created_by: u.user?.id,
-      });
+      const payload = { metodo, valor: Number(valor || 0), pago_em: pagoEm ? new Date(pagoEm).toISOString() : new Date().toISOString(), observacao: obs || null };
+      const { error } = isEditing
+        ? await supabase.from("os_payments").update(payload).eq("id", payment.id)
+        : await supabase.from("os_payments").insert({ os_id: osId, unit_id: unitId, ...payload, created_by: u.user?.id });
       if (error) throw error;
       if (osStatus === "concluida" || osStatus === "cancelada") {
         await supabase.from("service_orders").update({ status: "em_andamento", data_conclusao: null, fechada_por: null, fechada_com_saldo: false } as never).eq("id", osId);
       }
     },
     onSuccess: () => {
-      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Pagamento adicionado — OS reaberta" : COMMON.saved);
+      const closed = osStatus === "concluida" || osStatus === "cancelada";
+      toast.success(closed ? "Pagamento salvo — OS reaberta" : isEditing ? "Pagamento atualizado" : "Pagamento registrado");
       onClose();
       qc.invalidateQueries({ queryKey: ["os-payments", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
@@ -488,7 +509,7 @@ function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: s
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Registrar pagamento</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEditing ? "Editar pagamento" : "Registrar pagamento"}</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div>
             <Label>Método</Label>
@@ -497,10 +518,11 @@ function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: s
               <SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{safeLabel(PAYMENT_METHOD, m)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div><Label>Data do pagamento</Label><Input type="datetime-local" value={pagoEm} onChange={(e) => setPagoEm(e.target.value)} /></div>
           <div><Label>Valor *</Label><Input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
           <div><Label>Observação</Label><Textarea value={obs} onChange={(e) => setObs(e.target.value)} /></div>
         </div>
-        <DialogFooter><Button disabled={!valor || save.isPending} onClick={() => save.mutate()}>Salvar</Button></DialogFooter>
+        <DialogFooter><Button disabled={!valor || save.isPending} onClick={() => save.mutate()}>{isEditing ? "Salvar alterações" : "Salvar"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );

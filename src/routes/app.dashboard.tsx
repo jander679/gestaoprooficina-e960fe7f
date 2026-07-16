@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveUnit } from "@/hooks/use-active-unit";
 import { PageHeader } from "@/components/page-header";
@@ -26,7 +25,6 @@ function Card({ icon: Icon, label, value }: { icon: React.ComponentType<{ classN
 }
 
 function Dashboard() {
-  const { t } = useTranslation();
   const { activeUnitId, memberships, isSuperAdmin } = useActiveUnit();
 
   const { data } = useQuery({
@@ -49,7 +47,7 @@ function Dashboard() {
   if (!activeUnitId && !isSuperAdmin) {
     return (
       <div>
-        <PageHeader title={t("nav.dashboard")} />
+        <PageHeader title="Painel" />
         <div className="rounded-xl border border-dashed p-12 text-center">
           <h3 className="font-display text-base font-medium">Comece configurando sua empresa</h3>
           <p className="mt-2 text-sm text-muted-foreground">Cadastre sua empresa e a primeira unidade para começar.</p>
@@ -85,12 +83,12 @@ function Dashboard() {
 
   return (
     <div>
-      <PageHeader title={t("nav.dashboard")} />
+      <PageHeader title="Painel" />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card icon={ClipboardList} label="OS em aberto" value={data?.openOs ?? 0} />
         <Card icon={ClipboardList} label="Total de OS" value={data?.totalOs ?? 0} />
-        <Card icon={Users} label={t("customer.title")} value={data?.customers ?? 0} />
-        <Card icon={Car} label={t("vehicle.title")} value={data?.vehicles ?? 0} />
+        <Card icon={Users} label="Clientes" value={data?.customers ?? 0} />
+        <Card icon={Car} label="Veículos" value={data?.vehicles ?? 0} />
       </div>
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border bg-card p-6">
@@ -102,7 +100,7 @@ function Dashboard() {
         <div className="rounded-xl border bg-card p-6">
           <div className="text-sm text-muted-foreground">Ações rápidas</div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link to="/app/ordens/nova"><Button size="sm"><Plus className="mr-1 h-4 w-4" />Nova OS</Button></Link>
+            <Link to="/app/ordens"><Button size="sm"><Plus className="mr-1 h-4 w-4" />Nova OS</Button></Link>
             <Link to="/app/clientes"><Button size="sm" variant="outline"><Plus className="mr-1 h-4 w-4" />Cliente</Button></Link>
             <Link to="/app/veiculos"><Button size="sm" variant="outline"><Plus className="mr-1 h-4 w-4" />Veículo</Button></Link>
           </div>

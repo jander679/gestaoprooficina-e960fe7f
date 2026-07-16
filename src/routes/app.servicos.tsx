@@ -2,7 +2,6 @@ import { traduzirErro } from "@/lib/errors";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveUnit } from "@/hooks/use-active-unit";
 import { PageHeader, EmptyState } from "@/components/page-header";
@@ -21,7 +20,6 @@ export const Route = createFileRoute("/app/servicos")({
 interface Service { id: string; nome: string; descricao: string | null; preco_padrao: number; tempo_estimado_min: number | null; ativo: boolean }
 
 function ServicesPage() {
-  const { t } = useTranslation();
   const { activeUnitId } = useActiveUnit();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -43,7 +41,7 @@ function ServicesPage() {
       if (editing) { const { error } = await supabase.from("services_catalog").update(payload).eq("id", editing.id); if (error) throw error; }
       else { const { error } = await supabase.from("services_catalog").insert({ ...payload, unit_id: activeUnitId! } as never); if (error) throw error; }
     },
-    onSuccess: () => { toast.success(t("common.saved")); setOpen(false); setEditing(null); qc.invalidateQueries({ queryKey: ["services"] }); },
+    onSuccess: () => { toast.success("Salvo com sucesso"); setOpen(false); setEditing(null); qc.invalidateQueries({ queryKey: ["services"] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
@@ -53,27 +51,27 @@ function ServicesPage() {
   });
 
   const fields: Field[] = [
-    { name: "nome", label: t("common.name"), required: true, colSpan: 2 },
-    { name: "descricao", label: t("common.description"), type: "textarea", colSpan: 2 },
-    { name: "preco_padrao", label: t("service.defaultPrice"), type: "number", required: true },
-    { name: "tempo_estimado_min", label: t("service.estimatedTime"), type: "number" },
+    { name: "nome", label: "Nome", required: true, colSpan: 2 },
+    { name: "descricao", label: "Descrição", type: "textarea", colSpan: 2 },
+    { name: "preco_padrao", label: "Preço padrão", type: "number", required: true },
+    { name: "tempo_estimado_min", label: "Tempo estimado (min)", type: "number" },
   ];
 
-  if (!activeUnitId) return <EmptyState title={t("common.selectUnit")} />;
+  if (!activeUnitId) return <EmptyState title="Selecione uma unidade" />;
 
   return (
     <div>
-      <PageHeader title={t("service.title")} actions={<Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="mr-2 h-4 w-4" />{t("common.new")}</Button>} />
+      <PageHeader title="Serviços" actions={<Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="mr-2 h-4 w-4" />Novo</Button>} />
       <div className="rounded-xl border bg-card">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>{t("common.name")}</TableHead>
-            <TableHead>{t("service.defaultPrice")}</TableHead>
-            <TableHead>{t("service.estimatedTime")}</TableHead>
-            <TableHead className="w-24 text-right">{t("common.actions")}</TableHead>
+            <TableHead>Nome</TableHead>
+            <TableHead>Preço padrão</TableHead>
+            <TableHead>Tempo estimado</TableHead>
+            <TableHead className="w-24 text-right">Ações</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {data.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("common.empty")}</TableCell></TableRow>}
+            {data.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum registro encontrado.</TableCell></TableRow>}
             {data.map((s) => (
               <TableRow key={s.id}>
                 <TableCell className="font-medium">{s.nome}</TableCell>
@@ -81,7 +79,7 @@ function ServicesPage() {
                 <TableCell>{s.tempo_estimado_min ? `${s.tempo_estimado_min} min` : "—"}</TableCell>
                 <TableCell className="flex justify-end gap-1">
                   <Button size="icon" variant="ghost" onClick={() => { setEditing(s); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => { if (confirm(t("common.confirmDelete"))) remove.mutate(s.id); }}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => { if (confirm("Tem certeza que deseja excluir este registro?")) remove.mutate(s.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -89,7 +87,7 @@ function ServicesPage() {
         </Table>
       </div>
       <ResourceDialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}
-        title={editing ? t("common.edit") : t("common.new")}
+        title={editing ? "Editar" : "Novo"}
         fields={fields} initial={(editing ?? {}) as Record<string, unknown>} onSubmit={(v) => save.mutate(v as Partial<Service>)} submitting={save.isPending} />
     </div>
   );
