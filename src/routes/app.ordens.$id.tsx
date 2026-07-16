@@ -360,14 +360,15 @@ function OsEditableFields({
   );
 }
 
-function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId: string; osStatus: string; onClose: () => void }) {
+function ItemDialog({ osId, unitId, osStatus, item, onClose }: { osId: string; unitId: string; osStatus: string; item?: Item | null; onClose: () => void }) {
   const qc = useQueryClient();
-  const [tipo, setTipo] = useState<ItemType>("servico");
-  const [descricao, setDescricao] = useState("");
-  const [quantidade, setQuantidade] = useState("1");
-  const [preco, setPreco] = useState("");
-  const [desconto, setDesconto] = useState("0");
+  const [tipo, setTipo] = useState<ItemType>(item?.tipo ?? "servico");
+  const [descricao, setDescricao] = useState(item?.descricao ?? "");
+  const [quantidade, setQuantidade] = useState(item ? String(item.quantidade) : "1");
+  const [preco, setPreco] = useState(item ? String(item.preco_unitario) : "");
+  const [desconto, setDesconto] = useState(item ? String(item.desconto) : "0");
   const [refId, setRefId] = useState<string>("");
+  const isEditing = !!item;
 
   const { data: services = [] } = useQuery({
     queryKey: ["services-select", unitId],
@@ -401,17 +402,18 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
     mutationFn: async () => {
       const q = Number(quantidade || 0), pu = Number(preco || 0), d = Number(desconto || 0);
       const subtotal = Math.max(0, q * pu - d);
-      const { error } = await supabase.from("os_items").insert({
-        os_id: osId, unit_id: unitId, tipo, descricao,
-        referencia_id: refId || null, quantidade: q, preco_unitario: pu, desconto: d, subtotal,
-      });
+      const payload = { tipo, descricao, referencia_id: refId || null, quantidade: q, preco_unitario: pu, desconto: d, subtotal };
+      const { error } = isEditing
+        ? await supabase.from("os_items").update(payload).eq("id", item.id)
+        : await supabase.from("os_items").insert({ os_id: osId, unit_id: unitId, ...payload });
       if (error) throw error;
       if (osStatus === "concluida" || osStatus === "cancelada") {
         await supabase.from("service_orders").update({ status: "em_andamento", data_conclusao: null, fechada_por: null, fechada_com_saldo: false } as never).eq("id", osId);
       }
     },
     onSuccess: () => {
-      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Item adicionado — OS reaberta" : COMMON.saved);
+      const closed = osStatus === "concluida" || osStatus === "cancelada";
+      toast.success(closed ? "Item salvo — OS reaberta" : isEditing ? "Item atualizado" : "Item adicionado");
       onClose();
       qc.invalidateQueries({ queryKey: ["os-items", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
@@ -422,7 +424,7 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Adicionar item</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEditing ? "Editar item" : "Adicionar item"}</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div>
             <Label>Tipo</Label>
@@ -460,32 +462,43 @@ function ItemDialog({ osId, unitId, osStatus, onClose }: { osId: string; unitId:
             <div><Label>Desconto</Label><Input type="number" step="0.01" value={desconto} onChange={(e) => setDesconto(e.target.value)} /></div>
           </div>
         </div>
-        <DialogFooter><Button disabled={!descricao || save.isPending} onClick={() => save.mutate()}>Adicionar</Button></DialogFooter>
+        <DialogFooter><Button disabled={!descricao || save.isPending} onClick={() => save.mutate()}>{isEditing ? "Salvar alterações" : "Adicionar"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: string; unitId: string; osStatus: string; onClose: () => void; suggested: number }) {
+function toDateTimeInput(value: string | null | undefined) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function PaymentDialog({ osId, unitId, osStatus, payment, onClose, suggested }: { osId: string; unitId: string; osStatus: string; payment?: Payment | null; onClose: () => void; suggested: number }) {
   const qc = useQueryClient();
-  const [metodo, setMetodo] = useState<Method>("pix");
-  const [valor, setValor] = useState(String(suggested || ""));
-  const [obs, setObs] = useState("");
+  const [metodo, setMetodo] = useState<Method>(payment?.metodo ?? "pix");
+  const [valor, setValor] = useState(payment ? String(payment.valor) : String(suggested || ""));
+  const [pagoEm, setPagoEm] = useState(payment ? toDateTimeInput(payment.pago_em) : toDateTimeInput(new Date().toISOString()));
+  const [obs, setObs] = useState(payment?.observacao ?? "");
+  const isEditing = !!payment;
 
   const save = useMutation({
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
-      const { error } = await supabase.from("os_payments").insert({
-        os_id: osId, unit_id: unitId, metodo, valor: Number(valor || 0),
-        observacao: obs || null, created_by: u.user?.id,
-      });
+      const payload = { metodo, valor: Number(valor || 0), pago_em: pagoEm ? new Date(pagoEm).toISOString() : new Date().toISOString(), observacao: obs || null };
+      const { error } = isEditing
+        ? await supabase.from("os_payments").update(payload).eq("id", payment.id)
+        : await supabase.from("os_payments").insert({ os_id: osId, unit_id: unitId, ...payload, created_by: u.user?.id });
       if (error) throw error;
       if (osStatus === "concluida" || osStatus === "cancelada") {
         await supabase.from("service_orders").update({ status: "em_andamento", data_conclusao: null, fechada_por: null, fechada_com_saldo: false } as never).eq("id", osId);
       }
     },
     onSuccess: () => {
-      toast.success(osStatus === "concluida" || osStatus === "cancelada" ? "Pagamento adicionado — OS reaberta" : COMMON.saved);
+      const closed = osStatus === "concluida" || osStatus === "cancelada";
+      toast.success(closed ? "Pagamento salvo — OS reaberta" : isEditing ? "Pagamento atualizado" : "Pagamento registrado");
       onClose();
       qc.invalidateQueries({ queryKey: ["os-payments", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
@@ -496,7 +509,7 @@ function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: s
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Registrar pagamento</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEditing ? "Editar pagamento" : "Registrar pagamento"}</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div>
             <Label>Método</Label>
@@ -505,10 +518,11 @@ function PaymentDialog({ osId, unitId, osStatus, onClose, suggested }: { osId: s
               <SelectContent>{METHODS.map((m) => <SelectItem key={m} value={m}>{safeLabel(PAYMENT_METHOD, m)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div><Label>Data do pagamento</Label><Input type="datetime-local" value={pagoEm} onChange={(e) => setPagoEm(e.target.value)} /></div>
           <div><Label>Valor *</Label><Input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
           <div><Label>Observação</Label><Textarea value={obs} onChange={(e) => setObs(e.target.value)} /></div>
         </div>
-        <DialogFooter><Button disabled={!valor || save.isPending} onClick={() => save.mutate()}>Salvar</Button></DialogFooter>
+        <DialogFooter><Button disabled={!valor || save.isPending} onClick={() => save.mutate()}>{isEditing ? "Salvar alterações" : "Salvar"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
