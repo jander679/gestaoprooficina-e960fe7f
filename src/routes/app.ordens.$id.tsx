@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Trash2, ArrowLeft, Printer, FileDown, Save } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Printer, FileDown, Save, Pencil } from "lucide-react";
 import { traduzirErro } from "@/lib/errors";
 import { brl, fmtDateTime } from "@/lib/format";
 import { COMMON, OS_ITEM_TYPE, OS_STATUS, PAYMENT_METHOD, safeLabel } from "@/lib/pt-br";
@@ -122,6 +122,8 @@ function OrderDetail() {
 
   const [itemOpen, setItemOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
   if (!os) return <div>{COMMON.loading}</div>;
   const total = items.reduce((s, i) => s + Number(i.subtotal), 0);
@@ -205,7 +207,7 @@ function OrderDetail() {
       <div className="mt-6 rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="font-medium">Itens da OS</div>
-          <Button size="sm" onClick={() => setItemOpen(true)}><Plus className="mr-1 h-4 w-4" />Adicionar item</Button>
+          <Button size="sm" onClick={() => { setEditingItem(null); setItemOpen(true); }}><Plus className="mr-1 h-4 w-4" />Adicionar item</Button>
         </div>
         <Table>
           <TableHeader>
@@ -216,7 +218,7 @@ function OrderDetail() {
               <TableHead className="text-right">Preço</TableHead>
               <TableHead className="text-right">Desconto</TableHead>
               <TableHead className="text-right">Subtotal</TableHead>
-              <TableHead className="w-12"></TableHead>
+              <TableHead className="w-24 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -229,7 +231,10 @@ function OrderDetail() {
                 <TableCell className="text-right">{brl(i.preco_unitario)}</TableCell>
                 <TableCell className="text-right">{brl(i.desconto)}</TableCell>
                 <TableCell className="text-right font-medium">{brl(i.subtotal)}</TableCell>
-                <TableCell><Button size="icon" variant="ghost" onClick={() => removeItem.mutate(i.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                <TableCell className="flex justify-end gap-1">
+                  <Button size="icon" variant="ghost" title="Editar item" onClick={() => { setEditingItem(i); setItemOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" title="Excluir item" onClick={() => confirm("Excluir este item da OS?") && removeItem.mutate(i.id)}><Trash2 className="h-4 w-4" /></Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -245,10 +250,10 @@ function OrderDetail() {
       <div className="mt-6 rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="font-medium">Pagamentos</div>
-          <Button size="sm" onClick={() => setPayOpen(true)}><Plus className="mr-1 h-4 w-4" />Registrar pagamento</Button>
+          <Button size="sm" onClick={() => { setEditingPayment(null); setPayOpen(true); }}><Plus className="mr-1 h-4 w-4" />Registrar pagamento</Button>
         </div>
         <Table>
-          <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Método</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Observação</TableHead><TableHead className="w-12"></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Método</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Observação</TableHead><TableHead className="w-24 text-right">Ações</TableHead></TableRow></TableHeader>
           <TableBody>
             {payments.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{COMMON.empty}</TableCell></TableRow>}
             {payments.map((p) => (
@@ -257,15 +262,18 @@ function OrderDetail() {
                 <TableCell>{safeLabel(PAYMENT_METHOD, p.metodo)}</TableCell>
                 <TableCell className="text-right font-medium">{brl(p.valor)}</TableCell>
                 <TableCell>{p.observacao ?? ""}</TableCell>
-                <TableCell><Button size="icon" variant="ghost" onClick={() => removePayment.mutate(p.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                <TableCell className="flex justify-end gap-1">
+                  <Button size="icon" variant="ghost" title="Editar pagamento" onClick={() => { setEditingPayment(p); setPayOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" title="Excluir pagamento" onClick={() => confirm("Excluir este pagamento da OS?") && removePayment.mutate(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
 
-      {itemOpen && <ItemDialog osId={id} unitId={os.unit_id} osStatus={os.status} onClose={() => setItemOpen(false)} />}
-      {payOpen && <PaymentDialog osId={id} unitId={os.unit_id} osStatus={os.status} onClose={() => setPayOpen(false)} suggested={balance > 0 ? balance : total} />}
+      {itemOpen && <ItemDialog osId={id} unitId={os.unit_id} osStatus={os.status} item={editingItem} onClose={() => { setItemOpen(false); setEditingItem(null); }} />}
+      {payOpen && <PaymentDialog osId={id} unitId={os.unit_id} osStatus={os.status} payment={editingPayment} onClose={() => { setPayOpen(false); setEditingPayment(null); }} suggested={balance > 0 ? balance : total} />}
     </div>
   );
 }
