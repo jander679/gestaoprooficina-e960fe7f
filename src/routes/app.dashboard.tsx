@@ -47,7 +47,7 @@ function Dashboard() {
   if (!activeUnitId && !isSuperAdmin) {
     return (
       <div>
-        <PageHeader title={t("nav.dashboard")} />
+        <PageHeader title="Painel" />
         <div className="rounded-xl border border-dashed p-12 text-center">
           <h3 className="font-display text-base font-medium">Comece configurando sua empresa</h3>
           <p className="mt-2 text-sm text-muted-foreground">Cadastre sua empresa e a primeira unidade para começar.</p>
@@ -100,7 +100,7 @@ function Dashboard() {
         <div className="rounded-xl border bg-card p-6">
           <div className="text-sm text-muted-foreground">Ações rápidas</div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link to="/app/ordens/nova"><Button size="sm"><Plus className="mr-1 h-4 w-4" />Nova OS</Button></Link>
+            <Link to="/app/ordens"><Button size="sm"><Plus className="mr-1 h-4 w-4" />Nova OS</Button></Link>
             <Link to="/app/clientes"><Button size="sm" variant="outline"><Plus className="mr-1 h-4 w-4" />Cliente</Button></Link>
             <Link to="/app/veiculos"><Button size="sm" variant="outline"><Plus className="mr-1 h-4 w-4" />Veículo</Button></Link>
           </div>
