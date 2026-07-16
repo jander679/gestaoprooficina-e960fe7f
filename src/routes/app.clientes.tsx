@@ -2,7 +2,6 @@ import { traduzirErro } from "@/lib/errors";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveUnit } from "@/hooks/use-active-unit";
 import { PageHeader, EmptyState } from "@/components/page-header";
@@ -21,7 +20,6 @@ export const Route = createFileRoute("/app/clientes")({
 interface Customer { id: string; nome: string; cpf_cnpj: string | null; telefone: string | null; email: string | null; endereco: string | null; observacoes: string | null }
 
 function CustomersPage() {
-  const { t } = useTranslation();
   const { activeUnitId } = useActiveUnit();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
@@ -50,7 +48,7 @@ function CustomersPage() {
         if (error) throw error;
       }
     },
-    onSuccess: () => { toast.success(t("common.saved")); setOpen(false); setEditing(null); qc.invalidateQueries({ queryKey: ["customers"] }); },
+    onSuccess: () => { toast.success("Salvo com sucesso"); setOpen(false); setEditing(null); qc.invalidateQueries({ queryKey: ["customers"] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
@@ -59,29 +57,29 @@ function CustomersPage() {
       const { error } = await supabase.from("customers").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success(t("common.deleted")); qc.invalidateQueries({ queryKey: ["customers"] }); },
+    onSuccess: () => { toast.success("Excluído com sucesso"); qc.invalidateQueries({ queryKey: ["customers"] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
   const fields: Field[] = [
-    { name: "nome", label: t("common.name"), required: true, colSpan: 2 },
-    { name: "cpf_cnpj", label: t("customer.cpfCnpj") },
-    { name: "telefone", label: t("common.phone") },
-    { name: "email", label: t("common.email"), type: "email", colSpan: 2 },
-    { name: "endereco", label: t("common.address"), colSpan: 2 },
-    { name: "observacoes", label: t("customer.notes"), type: "textarea", colSpan: 2 },
+    { name: "nome", label: "Nome", required: true, colSpan: 2 },
+    { name: "cpf_cnpj", label: "CPF/CNPJ" },
+    { name: "telefone", label: "Telefone" },
+    { name: "email", label: "E-mail", type: "email", colSpan: 2 },
+    { name: "endereco", label: "Endereço", colSpan: 2 },
+    { name: "observacoes", label: "Observações", type: "textarea", colSpan: 2 },
   ];
 
-  if (!activeUnitId) return <EmptyState title={t("common.selectUnit")} />;
+  if (!activeUnitId) return <EmptyState title="Selecione uma unidade" />;
 
   return (
     <div>
       <PageHeader
-        title={t("customer.title")}
+        title="Clientes"
         actions={
           <>
-            <Input placeholder={t("common.search")} value={q} onChange={(e) => setQ(e.target.value)} className="w-64" />
-            <Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="mr-2 h-4 w-4" />{t("common.new")}</Button>
+            <Input placeholder="Buscar" value={q} onChange={(e) => setQ(e.target.value)} className="w-64" />
+            <Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="mr-2 h-4 w-4" />Novo</Button>
           </>
         }
       />
@@ -90,16 +88,16 @@ function CustomersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("common.name")}</TableHead>
-              <TableHead>{t("customer.cpfCnpj")}</TableHead>
-              <TableHead>{t("common.phone")}</TableHead>
-              <TableHead>{t("common.email")}</TableHead>
-              <TableHead className="w-24 text-right">{t("common.actions")}</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>CPF/CNPJ</TableHead>
+              <TableHead>Telefone</TableHead>
+              <TableHead>E-mail</TableHead>
+              <TableHead className="w-24 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{t("common.loading")}</TableCell></TableRow>}
-            {!isLoading && data.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{t("common.empty")}</TableCell></TableRow>}
+            {isLoading && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {!isLoading && data.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum registro encontrado.</TableCell></TableRow>}
             {data.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.nome}</TableCell>
@@ -108,7 +106,7 @@ function CustomersPage() {
                 <TableCell>{c.email ?? "—"}</TableCell>
                 <TableCell className="flex justify-end gap-1">
                   <Button size="icon" variant="ghost" onClick={() => { setEditing(c); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => { if (confirm(t("common.confirmDelete"))) remove.mutate(c.id); }}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => { if (confirm("Tem certeza que deseja excluir este registro?")) remove.mutate(c.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -119,7 +117,7 @@ function CustomersPage() {
       <ResourceDialog
         open={open}
         onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}
-        title={editing ? t("common.edit") : t("common.new")}
+        title={editing ? "Editar" : "Novo"}
         fields={fields}
         initial={(editing ?? {}) as Record<string, unknown>}
         onSubmit={(v) => save.mutate(v as Partial<Customer>)}
