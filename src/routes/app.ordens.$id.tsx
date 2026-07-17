@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,8 +19,15 @@ import { COMMON, OS_ITEM_TYPE, OS_STATUS, PAYMENT_METHOD, safeLabel } from "@/li
 
 export const Route = createFileRoute("/app/ordens/$id")({
   head: () => ({ meta: [{ title: "Ordem de Serviço — OficinaPro" }] }),
-  component: OrderDetail,
+  component: OrderRoute,
 });
+
+function OrderRoute() {
+  const { id } = Route.useParams();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname !== `/app/ordens/${id}`) return <Outlet />;
+  return <OrderDetail />;
+}
 
 type ItemType = "servico" | "peca" | "descricao_livre";
 type Method = "dinheiro" | "pix" | "credito" | "debito" | "boleto" | "transferencia" | "outro";
