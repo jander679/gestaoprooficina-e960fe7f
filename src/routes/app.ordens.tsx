@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,8 +20,14 @@ import { COMMON, OS_STATUS, STAFF_ROLE, safeLabel } from "@/lib/pt-br";
 
 export const Route = createFileRoute("/app/ordens")({
   head: () => ({ meta: [{ title: "Ordens de Serviço — OficinaPro" }] }),
-  component: OrdersPage,
+  component: OrdersRoute,
 });
+
+function OrdersRoute() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname !== "/app/ordens") return <Outlet />;
+  return <OrdersPage />;
+}
 
 interface OS {
   id: string; numero: number; status: string; total: number | null;
@@ -194,7 +200,11 @@ function OrdersPage() {
           <TableBody>
             {data.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{COMMON.empty}</TableCell></TableRow>}
             {data.map((o) => (
-              <TableRow key={o.id} className="cursor-pointer hover:bg-muted/50">
+              <TableRow
+                key={o.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => nav({ to: "/app/ordens/$id", params: { id: o.id } })}
+              >
                 <TableCell><Link to="/app/ordens/$id" params={{ id: o.id }} className="font-medium">#{o.numero}</Link></TableCell>
                 <TableCell>{fmtDateTime(o.data_abertura)}</TableCell>
                 <TableCell>{o.customers?.nome ?? "—"}</TableCell>
