@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,8 +15,14 @@ import { Download, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/app/financeiro")({
   head: () => ({ meta: [{ title: "Financeiro — OficinaPro" }] }),
-  component: FinancePage,
+  component: FinanceRoute,
 });
+
+function FinanceRoute() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname !== "/app/financeiro") return <Outlet />;
+  return <FinancePage />;
+}
 
 function todayISO(offset = 0) {
   const d = new Date(); d.setDate(d.getDate() + offset);
