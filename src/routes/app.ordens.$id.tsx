@@ -117,13 +117,13 @@ function OrderDetail() {
 
   const removeItem = useMutation({
     mutationFn: async (itemId: string) => { const { error } = await supabase.from("os_items").delete().eq("id", itemId); if (error) throw error; },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["os-items", id] }); qc.invalidateQueries({ queryKey: ["os", id] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["os-items", id] }); qc.invalidateQueries({ queryKey: ["os", id] }); qc.invalidateQueries({ queryKey: ["orders"] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
   const removePayment = useMutation({
     mutationFn: async (pid: string) => { const { error } = await supabase.from("os_payments").delete().eq("id", pid); if (error) throw error; },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["os-payments", id] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["os-payments", id] }); qc.invalidateQueries({ queryKey: ["os", id] }); qc.invalidateQueries({ queryKey: ["orders"] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
@@ -319,7 +319,7 @@ function OsEditableFields({
       }).eq("id", osId);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Atualizado"); qc.invalidateQueries({ queryKey: ["os", osId] }); },
+    onSuccess: () => { toast.success("Atualizado"); qc.invalidateQueries({ queryKey: ["os", osId] }); qc.invalidateQueries({ queryKey: ["orders"] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
@@ -424,6 +424,7 @@ function ItemDialog({ osId, unitId, osStatus, item, onClose }: { osId: string; u
       onClose();
       qc.invalidateQueries({ queryKey: ["os-items", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (e) => toast.error(traduzirErro(e)),
   });
@@ -509,6 +510,7 @@ function PaymentDialog({ osId, unitId, osStatus, payment, onClose, suggested }: 
       onClose();
       qc.invalidateQueries({ queryKey: ["os-payments", osId] });
       qc.invalidateQueries({ queryKey: ["os", osId] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (e) => toast.error(traduzirErro(e)),
   });
