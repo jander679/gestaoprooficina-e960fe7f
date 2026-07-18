@@ -9,6 +9,28 @@ const MAP: Record<FipeType, string> = {
   trucks: "caminhoes",
 };
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// fetch com retry/backoff para lidar com 429 (rate-limit) da API FIPE pública.
+async function fetchFipe(url: string, attempt = 0): Promise<Response | null> {
+  const MAX = 5;
+  try {
+    const res = await fetch(url, { headers: { accept: "application/json" } });
+    if (res.status === 429 || res.status === 503) {
+      if (attempt >= MAX) return res;
+      const retryAfter = Number(res.headers.get("retry-after")) || 0;
+      const wait = retryAfter > 0 ? retryAfter * 1000 : Math.min(30000, 1500 * Math.pow(2, attempt));
+      await sleep(wait);
+      return fetchFipe(url, attempt + 1);
+    }
+    return res;
+  } catch {
+    if (attempt >= MAX) return null;
+    await sleep(1000 * (attempt + 1));
+    return fetchFipe(url, attempt + 1);
+  }
+}
+
 // POST body: { type?: "cars"|"motorcycles"|"trucks"; sync_years?: boolean }
 // Sincroniza UM tipo por chamada (evita timeout). Se omitido, sincroniza "cars".
 export const Route = createFileRoute("/api/public/hooks/fipe-sync")({
@@ -26,8 +48,14 @@ export const Route = createFileRoute("/api/public/hooks/fipe-sync")({
           let totalBrands = 0, totalModels = 0, totalYears = 0;
           const path = MAP[type];
 
-          const brandsRes = await fetch(`${BASE}/${path}/marcas`);
-          if (!brandsRes.ok) throw new Error(`FIPE marcas HTTP ${brandsRes.status}`);
+          const brandsRes = await fetchFipe(`${BASE}/${path}/marcas`);
+          if (!brandsRes || !brandsRes.ok) {
+            const status = brandsRes?.status ?? 0;
+            const hint = status === 429
+              ? "A API pública da FIPE está limitando as requisições. Aguarde 1-2 minutos e tente novamente."
+              : `HTTP ${status}`;
+            throw new Error(`Falha ao buscar marcas FIPE: ${hint}`);
+          }
           const brands = (await brandsRes.json()) as Array<{ codigo: string | number; nome: string }>;
           const brandRows = brands.map((b) => ({ tipo: type, codigo: String(b.codigo), nome: b.nome }));
           if (brandRows.length) {
@@ -40,16 +68,16 @@ export const Route = createFileRoute("/api/public/hooks/fipe-sync")({
             .from("fipe_brands").select("id, codigo").eq("tipo", type);
           const brandMap = new Map((dbBrands ?? []).map((b: { id: string; codigo: string }) => [b.codigo, b.id]));
 
-          // Modelos em paralelo (batches)
-          const CONC = 8;
+          // Modelos: concorrência reduzida + pequeno delay entre batches para não estourar 429
+          const CONC = 3;
           for (let i = 0; i < brands.length; i += CONC) {
             const chunk = brands.slice(i, i + CONC);
             await Promise.all(chunk.map(async (b) => {
               const brandId = brandMap.get(String(b.codigo));
               if (!brandId) return;
+              const modelsRes = await fetchFipe(`${BASE}/${path}/marcas/${b.codigo}/modelos`);
+              if (!modelsRes || !modelsRes.ok) return;
               try {
-                const modelsRes = await fetch(`${BASE}/${path}/marcas/${b.codigo}/modelos`);
-                if (!modelsRes.ok) return;
                 const modelsJson = (await modelsRes.json()) as { modelos: Array<{ codigo: string | number; nome: string }> };
                 const rows = modelsJson.modelos.map((m) => ({
                   brand_id: brandId, codigo: String(m.codigo), nome: m.nome,
@@ -60,6 +88,7 @@ export const Route = createFileRoute("/api/public/hooks/fipe-sync")({
                 }
               } catch { /* skip brand */ }
             }));
+            await sleep(250);
           }
 
           if (syncYears) {
@@ -72,9 +101,9 @@ export const Route = createFileRoute("/api/public/hooks/fipe-sync")({
               await Promise.all(chunk.map(async (m: { id: string; codigo: string; brand_id: string }) => {
                 const brandCod = brandCodigoById.get(m.brand_id);
                 if (!brandCod) return;
+                const yr = await fetchFipe(`${BASE}/${path}/marcas/${brandCod}/modelos/${m.codigo}/anos`);
+                if (!yr || !yr.ok) return;
                 try {
-                  const yr = await fetch(`${BASE}/${path}/marcas/${brandCod}/modelos/${m.codigo}/anos`);
-                  if (!yr.ok) return;
                   const years = (await yr.json()) as Array<{ codigo: string; nome: string }>;
                   const rows = years.map((y) => ({ model_id: m.id, codigo: String(y.codigo), nome: y.nome }));
                   if (rows.length) {
@@ -83,6 +112,7 @@ export const Route = createFileRoute("/api/public/hooks/fipe-sync")({
                   }
                 } catch { /* skip */ }
               }));
+              await sleep(250);
             }
           }
 
