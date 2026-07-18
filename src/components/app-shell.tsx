@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import {
   Wrench, LayoutDashboard, Users, Car, Package, ClipboardList,
   UserCog, Wallet, Settings, ShieldCheck, Building2, DollarSign,
-  LogOut, Moon, Sun, Receipt,
+  LogOut, Moon, Sun, Receipt, Calendar
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -35,6 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const allItems = [
     { to: "/app/dashboard", icon: LayoutDashboard, label: "Painel", action: "nav.dashboard" as const },
+    { to: "/app/agenda", icon: Calendar, label: "Agenda", action: "nav.agenda" as const },
     { to: "/app/ordens", icon: ClipboardList, label: "Ordens de Serviço", action: "nav.orders" as const },
     { to: "/app/clientes", icon: Users, label: "Clientes", action: "nav.customers" as const },
     { to: "/app/veiculos", icon: Car, label: "Veículos", action: "nav.vehicles" as const },

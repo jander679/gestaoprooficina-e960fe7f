@@ -24,6 +24,7 @@ import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
 import { Route as AppColaboradoresRouteImport } from './routes/app.colaboradores'
 import { Route as AppClientesRouteImport } from './routes/app.clientes'
+import { Route as AppAgendaRouteImport } from './routes/app.agenda'
 import { Route as AppOrdensIdRouteImport } from './routes/app.ordens.$id'
 import { Route as AppFinanceiroContasPagarRouteImport } from './routes/app.financeiro.contas-pagar'
 import { Route as AppAdminOficinasRouteImport } from './routes/app.admin.oficinas'
@@ -107,6 +108,11 @@ const AppClientesRoute = AppClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAgendaRoute = AppAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppOrdensIdRoute = AppOrdensIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
+  '/app/agenda': typeof AppAgendaRoute
   '/app/clientes': typeof AppClientesRoute
   '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
+  '/app/agenda': typeof AppAgendaRoute
   '/app/clientes': typeof AppClientesRoute
   '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/pendente': typeof PendenteRoute
+  '/app/agenda': typeof AppAgendaRoute
   '/app/clientes': typeof AppClientesRoute
   '/app/colaboradores': typeof AppColaboradoresRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bloqueado'
     | '/pendente'
+    | '/app/agenda'
     | '/app/clientes'
     | '/app/colaboradores'
     | '/app/configuracoes'
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bloqueado'
     | '/pendente'
+    | '/app/agenda'
     | '/app/clientes'
     | '/app/colaboradores'
     | '/app/configuracoes'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bloqueado'
     | '/pendente'
+    | '/app/agenda'
     | '/app/clientes'
     | '/app/colaboradores'
     | '/app/configuracoes'
@@ -408,6 +420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppClientesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/agenda': {
+      id: '/app/agenda'
+      path: '/agenda'
+      fullPath: '/app/agenda'
+      preLoaderRoute: typeof AppAgendaRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/ordens/$id': {
       id: '/app/ordens/$id'
       path: '/$id'
@@ -497,6 +516,7 @@ const AppOrdensRouteWithChildren = AppOrdensRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppAgendaRoute: typeof AppAgendaRoute
   AppClientesRoute: typeof AppClientesRoute
   AppColaboradoresRoute: typeof AppColaboradoresRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
@@ -513,6 +533,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAgendaRoute: AppAgendaRoute,
   AppClientesRoute: AppClientesRoute,
   AppColaboradoresRoute: AppColaboradoresRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
@@ -541,3 +562,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

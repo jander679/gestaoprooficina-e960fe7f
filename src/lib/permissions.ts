@@ -20,6 +20,7 @@ export type Action =
   | "nav.accounts"
   | "nav.admin_oficinas"
   | "nav.admin_financeiro"
+  | "nav.agenda"
   // Escrita
   | "customers:write"
   | "vehicles:write"
@@ -36,7 +37,8 @@ export type Action =
   | "fipe:sync"
   | "finance:edit"
   | "history:read"
-  | "saas:finance";
+  | "saas:finance"
+  | "agenda:write";
 
 const MATRIX: Record<Action, Role[]> = {
   // Navegação — super_admin só vê seus próprios módulos
@@ -52,6 +54,7 @@ const MATRIX: Record<Action, Role[]> = {
   "nav.accounts": ["super_admin"],
   "nav.admin_oficinas": ["super_admin"],
   "nav.admin_financeiro": ["super_admin"],
+  "nav.agenda": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
 
   // Recepcionista e mecânico podem cadastrar clientes/veículos/peças/serviços
   "customers:write": ["oficina_admin", "mecanico", "recepcionista"],
@@ -75,6 +78,7 @@ const MATRIX: Record<Action, Role[]> = {
   "finance:edit": ["oficina_admin", "financeiro"],
   "history:read": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
   "saas:finance": ["super_admin"],
+  "agenda:write": ["oficina_admin", "mecanico", "recepcionista", "financeiro"],
 };
 
 export function can(role: Role | null | undefined, action: Action, isSuperAdmin = false): boolean {
