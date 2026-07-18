@@ -49,63 +49,63 @@ export type Database = {
       }
       appointments: {
         Row: {
-          id: string
-          unit_id: string
-          title: string
-          description: string | null
-          start_time: string
-          end_time: string
-          status: string
-          customer_id: string | null
-          vehicle_id: string | null
-          mecanico_id: string | null
-          created_by: string | null
           created_at: string
+          created_by: string | null
+          customer_id: string | null
+          description: string | null
+          end_time: string
+          id: string
+          mecanico_id: string | null
+          start_time: string
+          status: string
+          title: string
+          unit_id: string
           updated_at: string
+          vehicle_id: string | null
         }
         Insert: {
-          id?: string
-          unit_id: string
-          title: string
-          description?: string | null
-          start_time: string
-          end_time: string
-          status?: string
-          customer_id?: string | null
-          vehicle_id?: string | null
-          mecanico_id?: string | null
-          created_by?: string | null
           created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          description?: string | null
+          end_time: string
+          id?: string
+          mecanico_id?: string | null
+          start_time: string
+          status?: string
+          title: string
+          unit_id: string
           updated_at?: string
+          vehicle_id?: string | null
         }
         Update: {
-          id?: string
-          unit_id?: string
-          title?: string
-          description?: string | null
-          start_time?: string
-          end_time?: string
-          status?: string
-          customer_id?: string | null
-          vehicle_id?: string | null
-          mecanico_id?: string | null
-          created_by?: string | null
           created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          description?: string | null
+          end_time?: string
+          id?: string
+          mecanico_id?: string | null
+          start_time?: string
+          status?: string
+          title?: string
+          unit_id?: string
           updated_at?: string
+          vehicle_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "appointments_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "appointments_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
           {
@@ -115,13 +115,6 @@ export type Database = {
             referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "appointments_mecanico_id_fkey"
-            columns: ["mecanico_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
         ]
       }
       audit_log: {
