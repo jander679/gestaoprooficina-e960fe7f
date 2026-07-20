@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveUnit } from "@/hooks/use-active-unit";
 import { PageHeader, EmptyState } from "@/components/page-header";
@@ -34,7 +33,6 @@ const emptyPart = { nome: "", sku: "", preco_venda_padrao: "" };
 const emptyBatch = { lote: "", quantidade: "", preco_custo: "", preco_venda: "", validade: "", fornecedor: "" };
 
 function PartsPage() {
-  const { t } = useTranslation();
   const { activeUnitId } = useActiveUnit();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
@@ -80,26 +78,26 @@ function PartsPage() {
         if (error) throw error;
       }
     },
-    onSuccess: () => { toast.success(t("common.saved")); setOpen(false); qc.invalidateQueries({ queryKey: ["parts"] }); },
+    onSuccess: () => { toast.success("Salvo com sucesso"); setOpen(false); qc.invalidateQueries({ queryKey: ["parts"] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
   const remove = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("parts").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success(t("common.deleted")); qc.invalidateQueries({ queryKey: ["parts"] }); },
+    onSuccess: () => { toast.success("Excluído com sucesso"); qc.invalidateQueries({ queryKey: ["parts"] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
-  if (!activeUnitId) return <EmptyState title={t("common.selectUnit")} />;
+  if (!activeUnitId) return <EmptyState title="Selecione uma unidade" />;
 
   return (
     <div>
       <PageHeader
-        title={t("part.title")}
+        title="Peças"
         actions={
           <>
-            <Input placeholder={t("common.search")} value={q} onChange={(e) => setQ(e.target.value)} className="w-64" />
-            <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" />{t("common.new")}</Button>
+            <Input placeholder="Buscar" value={q} onChange={(e) => setQ(e.target.value)} className="w-64" />
+            <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" />Nova peça</Button>
           </>
         }
       />
@@ -108,23 +106,23 @@ function PartsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("common.name")}</TableHead>
-              <TableHead>{t("part.sku")}</TableHead>
-              <TableHead>{t("part.defaultPrice")}</TableHead>
-              <TableHead className="w-40 text-right">{t("common.actions")}</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>SKU</TableHead>
+              <TableHead>Preço venda</TableHead>
+              <TableHead className="w-40 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("common.empty")}</TableCell></TableRow>}
+            {data.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum registro encontrado.</TableCell></TableRow>}
             {data.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-medium">{p.nome}</TableCell>
                 <TableCell>{p.sku ?? "—"}</TableCell>
                 <TableCell>{p.preco_venda_padrao != null ? brl(p.preco_venda_padrao) : "—"}</TableCell>
                 <TableCell className="flex justify-end gap-1">
-                  <Button size="icon" variant="ghost" title={t("part.batches")} onClick={() => setBatchesFor(p)}><Boxes className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" title="Lotes" onClick={() => setBatchesFor(p)}><Boxes className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => { if (confirm(t("common.confirmDelete"))) remove.mutate(p.id); }}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => { if (confirm("Tem certeza que deseja excluir este registro?")) remove.mutate(p.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -134,13 +132,13 @@ function PartsPage() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? t("common.edit") : t("common.new")}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? "Editar peça" : "Nova peça"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2"><Label>{t("common.name")} *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
-            <div><Label>{t("part.sku")}</Label><Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} /></div>
-            <div><Label>{t("part.defaultPrice")}</Label><Input type="number" step="0.01" value={form.preco_venda_padrao} onChange={(e) => setForm({ ...form, preco_venda_padrao: e.target.value })} /></div>
+            <div className="col-span-2"><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+            <div><Label>SKU</Label><Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} /></div>
+            <div><Label>Preço venda</Label><Input type="number" step="0.01" value={form.preco_venda_padrao} onChange={(e) => setForm({ ...form, preco_venda_padrao: e.target.value })} /></div>
           </div>
-          <DialogFooter><Button disabled={!form.nome || save.isPending} onClick={() => save.mutate()}>{t("common.save")}</Button></DialogFooter>
+          <DialogFooter><Button disabled={!form.nome || save.isPending} onClick={() => save.mutate()}>Salvar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -150,7 +148,6 @@ function PartsPage() {
 }
 
 function BatchesDialog({ part, unitId, onClose }: { part: Part; unitId: string; onClose: () => void }) {
-  const { t } = useTranslation();
   const qc = useQueryClient();
   const [form, setForm] = useState<Record<string, string>>(emptyBatch);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -182,7 +179,7 @@ function BatchesDialog({ part, unitId, onClose }: { part: Part; unitId: string; 
         if (error) throw error;
       }
     },
-    onSuccess: () => { toast.success(t("common.saved")); setForm(emptyBatch); setEditingId(null); qc.invalidateQueries({ queryKey: ["part-batches", part.id] }); },
+    onSuccess: () => { toast.success("Salvo com sucesso"); setForm(emptyBatch); setEditingId(null); qc.invalidateQueries({ queryKey: ["part-batches", part.id] }); },
     onError: (e) => toast.error(traduzirErro(e)),
   });
 
@@ -203,22 +200,22 @@ function BatchesDialog({ part, unitId, onClose }: { part: Part; unitId: string; 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl">
-        <DialogHeader><DialogTitle>{t("part.batchesFor")} {part.nome}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Lotes de {part.nome}</DialogTitle></DialogHeader>
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("part.batch")}</TableHead>
-                <TableHead>{t("common.quantity")}</TableHead>
-                <TableHead>{t("part.cost")}</TableHead>
-                <TableHead>{t("part.defaultPrice")}</TableHead>
-                <TableHead>{t("part.validity")}</TableHead>
-                <TableHead>{t("part.supplier")}</TableHead>
+                <TableHead>Lote</TableHead>
+                <TableHead>Qtd</TableHead>
+                <TableHead>Custo</TableHead>
+                <TableHead>Preço venda</TableHead>
+                <TableHead>Validade</TableHead>
+                <TableHead>Fornecedor</TableHead>
                 <TableHead className="w-24 text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("part.noBatches")}</TableCell></TableRow>}
+              {data.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Sem lotes cadastrados.</TableCell></TableRow>}
               {data.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell>{b.lote ?? "—"}</TableCell>
@@ -229,7 +226,7 @@ function BatchesDialog({ part, unitId, onClose }: { part: Part; unitId: string; 
                   <TableCell>{b.fornecedor ?? "—"}</TableCell>
                   <TableCell className="flex justify-end gap-1">
                     <Button size="icon" variant="ghost" onClick={() => edit(b)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => { if (confirm(t("common.confirmDelete"))) remove.mutate(b.id); }}><Trash2 className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => { if (confirm("Tem certeza que deseja excluir este registro?")) remove.mutate(b.id); }}><Trash2 className="h-4 w-4" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -238,18 +235,18 @@ function BatchesDialog({ part, unitId, onClose }: { part: Part; unitId: string; 
         </div>
 
         <div className="grid grid-cols-3 gap-3 pt-3">
-          <div><Label>{t("part.batch")}</Label><Input value={form.lote} onChange={(e) => setForm({ ...form, lote: e.target.value })} /></div>
-          <div><Label>{t("common.quantity")} *</Label><Input type="number" step="0.01" value={form.quantidade} onChange={(e) => setForm({ ...form, quantidade: e.target.value })} /></div>
-          <div><Label>{t("part.supplier")}</Label><Input value={form.fornecedor} onChange={(e) => setForm({ ...form, fornecedor: e.target.value })} /></div>
-          <div><Label>{t("part.cost")}</Label><Input type="number" step="0.01" value={form.preco_custo} onChange={(e) => setForm({ ...form, preco_custo: e.target.value })} /></div>
-          <div><Label>{t("part.defaultPrice")}</Label><Input type="number" step="0.01" value={form.preco_venda} onChange={(e) => setForm({ ...form, preco_venda: e.target.value })} /></div>
-          <div><Label>{t("part.validity")}</Label><Input type="date" value={form.validade} onChange={(e) => setForm({ ...form, validade: e.target.value })} /></div>
+          <div><Label>Lote</Label><Input value={form.lote} onChange={(e) => setForm({ ...form, lote: e.target.value })} /></div>
+          <div><Label>Qtd *</Label><Input type="number" step="0.01" value={form.quantidade} onChange={(e) => setForm({ ...form, quantidade: e.target.value })} /></div>
+          <div><Label>Fornecedor</Label><Input value={form.fornecedor} onChange={(e) => setForm({ ...form, fornecedor: e.target.value })} /></div>
+          <div><Label>Custo</Label><Input type="number" step="0.01" value={form.preco_custo} onChange={(e) => setForm({ ...form, preco_custo: e.target.value })} /></div>
+          <div><Label>Preço venda</Label><Input type="number" step="0.01" value={form.preco_venda} onChange={(e) => setForm({ ...form, preco_venda: e.target.value })} /></div>
+          <div><Label>Validade</Label><Input type="date" value={form.validade} onChange={(e) => setForm({ ...form, validade: e.target.value })} /></div>
         </div>
 
         <DialogFooter>
-          {editingId && <Button variant="ghost" onClick={() => { setEditingId(null); setForm(emptyBatch); }}>{t("common.cancel")}</Button>}
+          {editingId && <Button variant="ghost" onClick={() => { setEditingId(null); setForm(emptyBatch); }}>Cancelar</Button>}
           <Button disabled={!form.quantidade || save.isPending} onClick={() => save.mutate()}>
-            {editingId ? t("common.save") : t("common.add")}
+            {editingId ? "Salvar" : "Adicionar"}
           </Button>
         </DialogFooter>
       </DialogContent>
