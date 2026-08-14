@@ -131,7 +131,7 @@ export function OrionIA() {
                   placeholder="Digite sua pergunta..."
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  className="bg-white"
+                  className="bg-background text-foreground border-input"
                 />
                 <Button type="submit" size="icon" disabled={!inputValue.trim()}>
                   <Send className="w-4 h-4" />
