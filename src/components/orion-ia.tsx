@@ -13,14 +13,9 @@ type Message = {
   sender: 'ai' | 'user';
 };
 
-// Configuração do Gemini (Chave ofuscada para evitar bloqueio de segurança do GitHub)
+// Configuração da Chave do Gemini (Chave ofuscada para evitar bloqueio de segurança do GitHub)
 const fallbackKey = ["AQ.Ab8R", "N6JRADL", "CyHYlceT", "nSYzGvO", "GYDu4C", "dS0iQNl", "Va4y0q-RfhA"].join("");
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || fallbackKey;
-const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ 
-  model: 'gemini-1.5-flash',
-  systemInstruction: 'Você é a Órion-IA, uma assistente virtual inteligente e prestativa do sistema de gestão OficinaPro. Você responde em português brasileiro. Seja sempre clara, amigável e profissional ao responder dúvidas ou ajudar mecânicos e atendentes da oficina.'
-});
 
 export function OrionIA() {
   const [messages, setMessages] = useState<Message[]>([
@@ -58,9 +53,15 @@ export function OrionIA() {
     setIsLoading(true);
 
     try {
-      if (!model) {
+      if (!apiKey) {
         throw new Error('missing_key');
       }
+
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-1.5-flash',
+        systemInstruction: 'Você é a Órion-IA, uma assistente virtual inteligente e prestativa do sistema de gestão OficinaPro. Você responde em português brasileiro. Seja sempre clara, amigável e profissional ao responder dúvidas ou ajudar mecânicos e atendentes da oficina.'
+      });
 
       // Constrói o histórico do chat no formato do Gemini (apenas enviamos a atual para simplificar, 
       // mas num app complexo você mapearia as 'messages' para enviar o histórico)
