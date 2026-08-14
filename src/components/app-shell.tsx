@@ -18,6 +18,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { OrionIA } from "@/components/orion-ia";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const nav = useNavigate();
@@ -201,6 +202,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-4 md:p-6">{children}</main>
       </div>
+      <OrionIA />
     </div>
   );
 }
