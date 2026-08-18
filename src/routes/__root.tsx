@@ -90,8 +90,11 @@ function AuthEvents() {
   return null;
 }
 
+import { useAuth } from "@/hooks/use-auth";
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -99,9 +102,18 @@ function RootComponent() {
           <AuthEvents />
           <Outlet />
           <Toaster richColors position="top-right" />
-          <OrionIA />
+          <OrionIAWrapper />
         </ActiveUnitProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function OrionIAWrapper() {
+  const { session } = useAuth();
+  
+  // Renderiza a IA apenas se existir uma sessão ativa (usuário logado)
+  if (!session) return null;
+  
+  return <OrionIA />;
 }
